@@ -9,7 +9,7 @@ type UseCallOptions = {
     onSuccess?: (result: unknown) => void;
 };
 
-export function useCall<TArgs = unknown, TResult = unknown>(
+export function useCall<TArgs, TResult>(
     method: MethodStub<TArgs, TResult>,
     options: UseCallOptions = {}
 ) {

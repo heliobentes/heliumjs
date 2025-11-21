@@ -1,5 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
 @import "tailwindcss";
 
-body {
-  @apply bg-gray-50 text-gray-900 h-full w-full;
+@layer base {
+  
+  body {
+    @apply bg-gray-50 text-gray-900 h-full w-full;
+  }
+
+  .add-3d {
+    @apply shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_0_-2px_0_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)];
+  }
+  .input {
+    @apply bg-white inset-shadow-xs border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent;
+  }
+  .button {
+    @apply inline-block text-center cursor-pointer select-none transition duration-150 ease-in-out border border-b-3 border-r-3 text-sm font-medium rounded-lg ;
+    &.primary {
+      @apply bg-teal-500 border-teal-700 text-white px-4 py-2 hover:bg-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.4),inset_0_-2px_0_0_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)];
+    }
+  }
+}
+
+@theme base {
+  --default-font-family: 'Open Sans', sans-serif;
 }

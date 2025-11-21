@@ -12,7 +12,7 @@ import {
     VIRTUAL_ENTRY_MODULE_ID,
     VIRTUAL_SERVER_MANIFEST_ID,
 } from './paths.js';
-import { scanServerMethods } from './scanner.js';
+import { scanServerExports } from './scanner.js';
 import {
     generateClientModule,
     generateEntryModule,
@@ -72,6 +72,9 @@ export default function helium(): Plugin {
             // Provide default index.html if none exists
             return {
                 appType: 'spa',
+                optimizeDeps: {
+                    include: ['react-dom/client'],
+                },
             };
         },
         resolveId(id, importer) {
@@ -92,19 +95,19 @@ export default function helium(): Plugin {
         },
         load(id) {
             if (id === RESOLVED_VIRTUAL_CLIENT_MODULE_ID) {
-                const methods = scanServerMethods(root);
+                const { methods } = scanServerExports(root);
                 return generateClientModule(methods);
             }
             if (id === RESOLVED_VIRTUAL_SERVER_MANIFEST_ID) {
-                const methods = scanServerMethods(root);
-                return generateServerManifest(methods);
+                const { methods, httpHandlers } = scanServerExports(root);
+                return generateServerManifest(methods, httpHandlers);
             }
             if (id === RESOLVED_VIRTUAL_ENTRY_MODULE_ID + '.tsx') {
                 return generateEntryModule();
             }
         },
         buildStart() {
-            const methods = scanServerMethods(root);
+            const { methods } = scanServerExports(root);
             const dts = generateTypeDefinitions(methods, root);
             const dtsPath = path.join(root, 'src', 'helium-server.d.ts');
             // Ensure src exists
@@ -115,7 +118,7 @@ export default function helium(): Plugin {
         },
         configureServer(server) {
             const regenerateTypes = () => {
-                const methods = scanServerMethods(root);
+                const { methods } = scanServerExports(root);
                 const dts = generateTypeDefinitions(methods, root);
                 const dtsPath = path.join(root, 'src', 'helium-server.d.ts');
                 fs.writeFileSync(dtsPath, dts);
@@ -144,10 +147,12 @@ export default function helium(): Plugin {
                 try {
                     const mod = await server.ssrLoadModule(VIRTUAL_SERVER_MANIFEST_ID);
                     const registerAll = mod.registerAll;
+                    const httpHandlers = mod.httpHandlers || [];
 
-                    // Update the dev server registry with new methods
-                    startDevServer((registry) => {
+                    // Update the dev server registry with new methods and HTTP handlers
+                    startDevServer((registry, httpRouter) => {
                         registerAll(registry);
+                        httpRouter.registerRoutes(httpHandlers);
                     });
                 } catch (e) {
                     console.error('Failed to reload Helium server manifest', e);
@@ -201,9 +206,11 @@ export default function helium(): Plugin {
                     // This allows us to load TS files directly and handle dependencies
                     const mod = await server.ssrLoadModule(VIRTUAL_SERVER_MANIFEST_ID);
                     const registerAll = mod.registerAll;
+                    const httpHandlers = mod.httpHandlers || [];
 
-                    startDevServer((registry) => {
+                    startDevServer((registry, httpRouter) => {
                         registerAll(registry);
+                        httpRouter.registerRoutes(httpHandlers);
                     });
                 } catch (e) {
                     console.error('Failed to start Helium RPC server', e);

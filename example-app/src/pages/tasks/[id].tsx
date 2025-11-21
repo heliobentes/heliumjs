@@ -1,6 +1,5 @@
 import { Link, useFetch, useRouter } from "helium/client";
 import { getTasks } from "helium/server";
-import type { Task } from "../../server/tasks/tasksStore";
 
 type TaskDetailProps = {
   params: {
@@ -9,22 +8,18 @@ type TaskDetailProps = {
 };
 
 export default function TaskDetailPage({ params }: TaskDetailProps) {
-  console.log("🚀 ~ TaskDetailPage ~ params:", params);
   const router = useRouter();
 
-  const { data: tasks, isLoading } = useFetch<{ status?: string }, Task[]>(
-    getTasks,
-    {
-      status: "open",
-    }
-  );
+  const { data: tasks, isLoading } = useFetch(getTasks, {
+    status: "open",
+  });
 
   const task = tasks?.find((t) => t.id === Number(params.id));
 
   if (isLoading) {
     return (
       <div>
-        <p className="text-slate-400">Loading task...</p>
+        <p className="text-gray-600">Loading task...</p>
       </div>
     );
   }
@@ -34,7 +29,7 @@ export default function TaskDetailPage({ params }: TaskDetailProps) {
       <div>
         <h1 className="text-3xl font-bold mb-4">Task Not Found</h1>
         <p className="mb-4">Task with ID {params.id} does not exist.</p>
-        <Link href="/tasks" className="text-blue-400 hover:text-blue-300">
+        <Link href="/tasks" className="text-teal-500 hover:text-teal-600">
           ← Back to Tasks
         </Link>
       </div>
@@ -43,8 +38,8 @@ export default function TaskDetailPage({ params }: TaskDetailProps) {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-4">{task.name}</h1>
-      <div className="space-y-4">
+      <h1 className="text-2xl font-bold mb-4">{task.name}</h1>
+      <div className="space-y-4 bg-white p-4 border border-gray-300 rounded-lg">
         <div>
           <span className="text-slate-400">Task ID:</span>{" "}
           <span className="font-mono">{params.id}</span>
@@ -59,15 +54,9 @@ export default function TaskDetailPage({ params }: TaskDetailProps) {
         </div>
       </div>
       <div className="mt-6 space-x-4">
-        <Link href="/tasks" className="text-blue-400 hover:text-blue-300">
+        <Link href="/tasks" className="text-teal-500 hover:text-teal-600">
           ← Back to Tasks
         </Link>
-        <button
-          onClick={() => router.push("/")}
-          className="text-slate-400 hover:text-slate-300"
-        >
-          Go Home
-        </button>
       </div>
     </div>
   );

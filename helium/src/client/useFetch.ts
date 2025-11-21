@@ -4,10 +4,7 @@ import { cacheKey, get, has, set, subscribeInvalidations } from './cache.js';
 import { rpcCall } from './rpcClient.js';
 import type { MethodStub } from './types.js';
 
-export function useFetch<TArgs = unknown, TResult = unknown>(
-    method: MethodStub<TArgs, TResult>,
-    args?: TArgs
-) {
+export function useFetch<TArgs, TResult>(method: MethodStub<TArgs, TResult>, args?: TArgs) {
     const key = cacheKey(method.__id, args);
 
     const [data, setData] = useState<TResult | undefined>(() =>

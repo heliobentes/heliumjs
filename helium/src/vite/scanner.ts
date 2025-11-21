@@ -8,13 +8,29 @@ export interface MethodExport {
     filePath: string;
 }
 
+export interface HTTPHandlerExport {
+    name: string;
+    filePath: string;
+}
+
+export interface ServerExports {
+    methods: MethodExport[];
+    httpHandlers: HTTPHandlerExport[];
+}
+
 export function scanServerMethods(root: string): MethodExport[] {
+    const exports = scanServerExports(root);
+    return exports.methods;
+}
+
+export function scanServerExports(root: string): ServerExports {
     const serverDir = path.resolve(root, SERVER_DIR);
     if (!fs.existsSync(serverDir)) {
-        return [];
+        return { methods: [], httpHandlers: [] };
     }
 
     const methods: MethodExport[] = [];
+    const httpHandlers: HTTPHandlerExport[] = [];
 
     function walk(dir: string) {
         const files = fs.readdirSync(dir);
@@ -26,11 +42,21 @@ export function scanServerMethods(root: string): MethodExport[] {
                 walk(fullPath);
             } else if (file.endsWith('.ts')) {
                 const content = fs.readFileSync(fullPath, 'utf-8');
-                // Regex to find: export const methodName = defineMethod(...)
-                const regex = /export\s+const\s+(\w+)\s*=\s*defineMethod/g;
+
+                // Find: export const methodName = defineMethod(...)
+                const methodRegex = /export\s+const\s+(\w+)\s*=\s*defineMethod/g;
                 let match;
-                while ((match = regex.exec(content)) !== null) {
+                while ((match = methodRegex.exec(content)) !== null) {
                     methods.push({
+                        name: match[1],
+                        filePath: fullPath,
+                    });
+                }
+
+                // Find: export const handlerName = defineHTTPRequest(...)
+                const httpRegex = /export\s+const\s+(\w+)\s*=\s*defineHTTPRequest/g;
+                while ((match = httpRegex.exec(content)) !== null) {
+                    httpHandlers.push({
                         name: match[1],
                         filePath: fullPath,
                     });
@@ -40,5 +66,5 @@ export function scanServerMethods(root: string): MethodExport[] {
     }
 
     walk(serverDir);
-    return methods;
+    return { methods, httpHandlers };
 }
