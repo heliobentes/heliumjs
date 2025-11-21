@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { Link, useCall, useFetch } from "helium/client";
-import { createTask, getTasks } from "helium/server";
+import { createTask, deleteTask, getTasks } from "helium/server";
 
 export default function TasksPage() {
   const [taskName, setTaskName] = useState("");
@@ -11,6 +11,10 @@ export default function TasksPage() {
   });
 
   const { call: addTask, isCalling } = useCall(createTask, {
+    invalidate: [getTasks],
+  });
+
+  const { call: removeTask, isCalling: isDeleting } = useCall(deleteTask, {
     invalidate: [getTasks],
   });
 
@@ -50,6 +54,17 @@ export default function TasksPage() {
             className="border border-gray-300 hover:shadow-lg p-3 rounded-lg bg-white flex justify-between items-center"
           >
             {task.name}
+
+            <button
+              onClick={async (e) => {
+                e.preventDefault();
+                await removeTask({ id: task.id });
+              }}
+              disabled={isDeleting}
+              className="text-red-500 hover:text-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
           </Link>
         ))}
       </div>

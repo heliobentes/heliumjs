@@ -14,3 +14,29 @@ export const createTask = defineMethod(async (args: { name: string }) => {
   tasksStore.push(task);
   return task;
 });
+
+export const deleteTask = defineMethod(async (args: { id: number }) => {
+  const index = tasksStore.findIndex((t) => t.id === args.id);
+  if (index !== -1) {
+    tasksStore.splice(index, 1);
+    return { success: true };
+  } else {
+    return { success: false, message: "Task not found" };
+  }
+});
+
+export const editTask = defineMethod(
+  async (args: { id: number; name?: string; status?: string }) => {
+    const task = tasksStore.find((t) => t.id === args.id);
+    if (!task) {
+      return { success: false, message: "Task not found" };
+    }
+    if (args.name !== undefined) {
+      task.name = args.name;
+    }
+    if (args.status !== undefined) {
+      task.status = args.status as any;
+    }
+    return { success: true, task };
+  }
+);

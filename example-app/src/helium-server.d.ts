@@ -6,6 +6,8 @@ import type { getProfile as method_0_type } from './server/profile';
 import type { updateProfile as method_1_type } from './server/profile';
 import type { getTasks as method_2_type } from './server/tasks/index';
 import type { createTask as method_3_type } from './server/tasks/index';
+import type { deleteTask as method_4_type } from './server/tasks/index';
+import type { editTask as method_5_type } from './server/tasks/index';
 
 declare module 'helium/server' {
 export const getProfile: import('helium/client').MethodStub<
@@ -23,5 +25,13 @@ export const getTasks: import('helium/client').MethodStub<
 export const createTask: import('helium/client').MethodStub<
     Parameters<typeof method_3_type['handler']>[0],
     Awaited<ReturnType<typeof method_3_type['handler']>>
+>;
+export const deleteTask: import('helium/client').MethodStub<
+    Parameters<typeof method_4_type['handler']>[0],
+    Awaited<ReturnType<typeof method_4_type['handler']>>
+>;
+export const editTask: import('helium/client').MethodStub<
+    Parameters<typeof method_5_type['handler']>[0],
+    Awaited<ReturnType<typeof method_5_type['handler']>>
 >;
 }

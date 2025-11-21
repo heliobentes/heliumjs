@@ -36,6 +36,7 @@ export default function TaskDetailPage({ params }: TaskDetailProps) {
     );
   }
 
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">{task.name}</h1>
