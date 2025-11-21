@@ -19,7 +19,6 @@ export type RouteEntry = {
  * - /src/pages/tasks/[id].tsx → /tasks/:id
  * - /src/pages/settings/profile.tsx → /settings/profile
  * - /src/pages/404.tsx → __404__
- * - /src/pages/_app.tsx → __APP__
  */
 function pathFromFile(file: string): string {
     // Remove /src/pages prefix and file extension
@@ -27,7 +26,6 @@ function pathFromFile(file: string): string {
 
     // Handle special files
     if (withoutPrefix === '/404') return '__404__';
-    if (withoutPrefix === '/_app') return '__APP__';
 
     // Convert /index to /
     let pattern = withoutPrefix.replace(/\/index$/, '') || '/';
@@ -139,10 +137,6 @@ export function buildRoutes(): {
         // Handle special pages
         if (pathPattern === '__404__') {
             NotFound = Component;
-            continue;
-        }
-        if (pathPattern === '__APP__') {
-            AppShell = Component;
             continue;
         }
 

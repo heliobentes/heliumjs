@@ -51,14 +51,15 @@ function navigate(href: string, replace = false) {
     window.dispatchEvent(navEvent);
 }
 
-export type LinkProps = React.PropsWithChildren<{
-    href: string;
-    replace?: boolean;
-    className?: string;
-}>;
+export type LinkProps = React.PropsWithChildren<
+    Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> & {
+        href: string;
+        replace?: boolean;
+    }
+>;
 
 export function Link(props: LinkProps) {
-    const onClick = (e: React.MouseEvent) => {
+    const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (
             e.defaultPrevented ||
             e.button !== 0 || // only left click
@@ -71,11 +72,14 @@ export function Link(props: LinkProps) {
         }
         e.preventDefault();
         navigate(props.href, props.replace);
+        props.onClick?.(e);
     };
 
+    const { children, href, className, ...safeProps } = props;
+
     return (
-        <a href={props.href} onClick={onClick} className={props.className}>
-            {props.children}
+        <a href={href} onClick={onClick} className={className} {...safeProps}>
+            {children}
         </a>
     );
 }

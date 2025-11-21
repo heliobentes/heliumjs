@@ -4,11 +4,12 @@ import type { Task } from "../../server/tasks/tasksStore";
 
 type TaskDetailProps = {
   params: {
-    id: string;
+    id: string[];
   };
 };
 
 export default function TaskDetailPage({ params }: TaskDetailProps) {
+  console.log("🚀 ~ TaskDetailPage ~ params:", params);
   const router = useRouter();
 
   const { data: tasks, isLoading } = useFetch<{ status?: string }, Task[]>(
