@@ -1,14 +1,10 @@
-import path from "path";
+import react from "@vitejs/plugin-react";
+import helium from "helium/vite";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  plugins: [helium(), react()],
   server: {
     port: 5173,
-  },
-  resolve: {
-    alias: {
-      react: path.resolve(__dirname, "node_modules/react"),
-      "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
-    },
   },
 });

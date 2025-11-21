@@ -1,0 +1,8 @@
+{
+  "name": "heliumjs-workspace",
+  "private": true,
+  "workspaces": [
+    "helium",
+    "example-app"
+  ]
+}
