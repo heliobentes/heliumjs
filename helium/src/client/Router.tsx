@@ -29,7 +29,7 @@ function matchRoute(path: string) {
 // Context for useRouter hook
 type RouterContextValue = {
     path: string;
-    params: Record<string, string>;
+    params: Record<string, string | string[]>;
     search: URLSearchParams;
     push: (href: string) => void;
     replace: (href: string) => void;

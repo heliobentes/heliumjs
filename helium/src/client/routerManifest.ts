@@ -6,7 +6,7 @@ export type LayoutProps = {
 
 export type RouteEntry = {
     pathPattern: string; // "/tasks/:id"
-    matcher: (path: string) => { params: Record<string, string> } | null;
+    matcher: (path: string) => { params: Record<string, string | string[]> } | null;
     Component: ComponentType<any>;
     layouts: ComponentType<LayoutProps>[]; // Array of layouts from root to leaf
 };
@@ -18,6 +18,7 @@ export type RouteEntry = {
  * - /src/pages/tasks/index.tsx → /tasks
  * - /src/pages/tasks/[id].tsx → /tasks/:id
  * - /src/pages/settings/profile.tsx → /settings/profile
+ * - /src/pages/blog/[...slug].tsx → /blog/*slug
  * - /src/pages/404.tsx → __404__
  */
 function pathFromFile(file: string): string {
@@ -29,7 +30,9 @@ function pathFromFile(file: string): string {
 
     // Convert /index to /
     let pattern = withoutPrefix.replace(/\/index$/, '') || '/';
-    // Convert [param] to :param
+    // Convert [...param] to *param (catch-all)
+    pattern = pattern.replace(/\[\.\.\.(.+?)\]/g, '*$1');
+    // Convert [param] to :param (single dynamic segment)
     pattern = pattern.replace(/\[(.+?)\]/g, ':$1');
 
     return pattern;
@@ -38,6 +41,7 @@ function pathFromFile(file: string): string {
 /**
  * Create a matcher function for a route pattern
  * Supports dynamic segments like :id, :slug, etc.
+ * Supports catch-all segments like *slug for [...slug]
  */
 function createMatcher(pattern: string) {
     const segments = pattern.split('/').filter(Boolean);
@@ -52,12 +56,47 @@ function createMatcher(pattern: string) {
             return { params: {} };
         }
 
+        const params: Record<string, string | string[]> = {};
+
+        // Check for catch-all segment (must be last)
+        const hasCatchAll = segments.some((seg) => seg.startsWith('*'));
+        if (hasCatchAll) {
+            const catchAllIndex = segments.findIndex((seg) => seg.startsWith('*'));
+
+            // Catch-all must be the last segment
+            if (catchAllIndex !== segments.length - 1) {
+                console.warn(`[Helium] Catch-all segment must be last: ${pattern}`);
+                return null;
+            }
+
+            const catchAllParam = segments[catchAllIndex].slice(1); // Remove *
+
+            // Match segments before catch-all
+            for (let i = 0; i < catchAllIndex; i++) {
+                const seg = segments[i];
+                const value = pathSegments[i];
+
+                if (!value) return null; // Not enough path segments
+
+                if (seg.startsWith(':')) {
+                    params[seg.slice(1)] = decodeURIComponent(value);
+                } else if (seg !== value) {
+                    return null; // Static segment must match
+                }
+            }
+
+            // Collect remaining path segments into catch-all param as an array
+            const remainingSegments = pathSegments.slice(catchAllIndex);
+            params[catchAllParam] = remainingSegments.map((s) => decodeURIComponent(s));
+
+            return { params };
+        }
+
+        // Regular matching (no catch-all)
         // If segment counts don't match, no match
         if (segments.length !== pathSegments.length) {
             return null;
         }
-
-        const params: Record<string, string> = {};
 
         for (let i = 0; i < segments.length; i++) {
             const seg = segments[i];
@@ -163,11 +202,18 @@ export function buildRoutes(): {
         });
     }
 
-    // Sort routes by specificity (static segments before dynamic)
+    // Sort routes by specificity (static > dynamic > catch-all)
     routes.sort((a, b) => {
+        const aHasCatchAll = a.pathPattern.includes('*');
+        const bHasCatchAll = b.pathPattern.includes('*');
         const aHasDynamic = a.pathPattern.includes(':');
         const bHasDynamic = b.pathPattern.includes(':');
 
+        // Catch-all routes should be last (least specific)
+        if (aHasCatchAll && !bHasCatchAll) return 1;
+        if (!aHasCatchAll && bHasCatchAll) return -1;
+
+        // Dynamic routes come after static routes
         if (aHasDynamic && !bHasDynamic) return 1;
         if (!aHasDynamic && bHasDynamic) return -1;
 
