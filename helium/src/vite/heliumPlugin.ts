@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import type { Plugin } from 'vite';
 
-import { startDevServer } from '../server/devServer.js';
+import { attachToDevServer } from '../server/devServer.js';
 import {
     RESOLVED_VIRTUAL_CLIENT_MODULE_ID,
     RESOLVED_VIRTUAL_ENTRY_MODULE_ID,
@@ -150,12 +150,14 @@ export default function helium(): Plugin {
                     const httpHandlers = mod.httpHandlers || [];
 
                     // Update the dev server registry with new methods and HTTP handlers
-                    startDevServer((registry, httpRouter) => {
-                        registerAll(registry);
-                        httpRouter.registerRoutes(httpHandlers);
-                    });
+                    if (server.httpServer) {
+                        attachToDevServer(server.httpServer, (registry, httpRouter) => {
+                            registerAll(registry);
+                            httpRouter.registerRoutes(httpHandlers);
+                        });
+                    }
                 } catch (e) {
-                    console.error('Failed to reload Helium server manifest', e);
+                    console.error('[Helium] ➜ Failed to reload Helium server manifest', e);
                 }
 
                 // Trigger HMR for any client code that imports helium/server
@@ -199,7 +201,7 @@ export default function helium(): Plugin {
                 }
             });
 
-            // We hook into the server start to start our RPC server
+            // We hook into the server start to attach our RPC server
             server.httpServer?.on('listening', async () => {
                 try {
                     // Load the manifest using Vite's SSR loader
@@ -208,12 +210,14 @@ export default function helium(): Plugin {
                     const registerAll = mod.registerAll;
                     const httpHandlers = mod.httpHandlers || [];
 
-                    startDevServer((registry, httpRouter) => {
-                        registerAll(registry);
-                        httpRouter.registerRoutes(httpHandlers);
-                    });
+                    if (server.httpServer) {
+                        attachToDevServer(server.httpServer, (registry, httpRouter) => {
+                            registerAll(registry);
+                            httpRouter.registerRoutes(httpHandlers);
+                        });
+                    }
                 } catch (e) {
-                    console.error('Failed to start Helium RPC server', e);
+                    console.error('[Helium] ➜ Failed to attach Helium RPC server', e);
                 }
             });
         },

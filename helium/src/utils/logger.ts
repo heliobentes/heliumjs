@@ -1,3 +1,3 @@
 export function log(...args: any[]) {
-  console.log('[helium]', ...args);
+  console.log('[Helium] ➜', ...args);
 }

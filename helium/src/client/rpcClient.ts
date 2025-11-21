@@ -11,7 +11,10 @@ function uuid() {
 function getSocket(): WebSocket {
     if (socket && socket.readyState === WebSocket.OPEN) return socket;
 
-    const url = `ws://${window.location.hostname}:4001/ws`;
+    // Use the same protocol, hostname and port as the current page
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host; // includes hostname and port
+    const url = `${protocol}//${host}/rpc`;
     socket = new WebSocket(url);
 
     socket.onmessage = (event) => {

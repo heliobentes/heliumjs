@@ -1,4 +1,6 @@
-import http from 'http';
+import type http from 'http';
+import type http2 from 'http2';
+import type https from 'https';
 import type WebSocket from 'ws';
 import { WebSocketServer } from 'ws';
 
@@ -6,55 +8,63 @@ import { HTTPRouter } from './httpRouter.js';
 import { RpcRegistry } from './rpcRegistry.js';
 
 type LoadHandlersFn = (registry: RpcRegistry, httpRouter: HTTPRouter) => void;
+type HttpServer = http.Server | https.Server | http2.Http2Server | http2.Http2SecureServer;
 
 let currentRegistry: RpcRegistry | null = null;
 let currentHttpRouter: HTTPRouter | null = null;
-let devServerStarted = false;
+let wss: WebSocketServer | null = null;
 
-export function startDevServer(loadHandlers: LoadHandlersFn) {
+/**
+ * Attaches HeliumJS HTTP handlers and WebSocket RPC server to an existing HTTP server.
+ * This is used in dev mode to attach to Vite's dev server.
+ */
+export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHandlersFn) {
     const registry = new RpcRegistry();
     const httpRouter = new HTTPRouter();
     loadHandlers(registry, httpRouter);
     currentRegistry = registry;
     currentHttpRouter = httpRouter;
 
-    if (devServerStarted) {
-        // Server already running, just updated the registries
-        return;
+    // Attach WebSocket server if not already attached
+    if (!wss) {
+        wss = new WebSocketServer({ noServer: true });
+
+        wss.on('connection', (socket: WebSocket) => {
+            socket.on('message', (msg: WebSocket.RawData) => {
+                // Always use the current registry (may have been updated)
+                if (currentRegistry) {
+                    currentRegistry.handleMessage(socket, msg.toString());
+                }
+            });
+        });
+
+        // Handle WebSocket upgrade requests
+        httpServer.on('upgrade', (req, socket, head) => {
+            if (req.url === '/rpc') {
+                wss!.handleUpgrade(req, socket, head, (ws) => {
+                    wss!.emit('connection', ws, req);
+                });
+            }
+        });
+
+        console.log('[Helium] ➜ WebSocket RPC attached to dev server at /rpc');
     }
 
-    devServerStarted = true;
-    const port = Number(process.env.HELIUM_RPC_PORT || 4001);
+    // Attach HTTP request handler
+    // We need to intercept requests before Vite handles them
+    const originalListeners = httpServer.listeners('request').slice();
+    httpServer.removeAllListeners('request');
 
-    const server = http.createServer(async (req, res) => {
-        if (req.url === '/health') {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('ok');
-            return;
-        }
-
+    httpServer.on('request', async (req: any, res: any) => {
         // Try HTTP handlers first
         if (currentHttpRouter) {
             const handled = await currentHttpRouter.handleRequest(req, res);
             if (handled) return;
         }
 
-        res.writeHead(404);
-        res.end('Not found');
-    });
-
-    const wss = new WebSocketServer({ server, path: '/ws' });
-
-    wss.on('connection', (socket: WebSocket) => {
-        socket.on('message', (msg: WebSocket.RawData) => {
-            // Always use the current registry (may have been updated)
-            if (currentRegistry) {
-                currentRegistry.handleMessage(socket, msg.toString());
-            }
-        });
-    });
-
-    server.listen(port, () => {
-        console.log(`[Helium] ➜ dev RPC server listening on http://localhost:${port}`);
+        // If no handler matched, pass to original Vite handlers
+        for (const listener of originalListeners) {
+            (listener as any)(req, res);
+        }
     });
 }

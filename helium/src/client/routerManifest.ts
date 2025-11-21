@@ -128,7 +128,7 @@ export function buildRoutes(): {
 
         const Component = (mod as any).default;
         if (!Component) {
-            console.warn(`No default export found in ${file}`);
+            console.warn(`[Helium] ➜ No default export found in ${file}`);
             continue;
         }
 
