@@ -39,7 +39,7 @@ export class HTTPRouter {
         const pathname = url.pathname || '/';
 
         for (const route of this.routes) {
-            if (route.method !== method) continue;
+            if (route.method !== 'ALL' && route.method !== method) continue;
 
             const match = pathname.match(route.pattern);
             if (!match) continue;
