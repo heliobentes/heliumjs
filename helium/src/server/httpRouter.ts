@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { parse as parseUrl } from "url";
 
 import type { HeliumHTTPDef, HTTPRequest } from "./defineHTTPRequest.js";
+import type { HeliumMiddleware } from "./middleware.js";
 
 export interface HTTPRoute {
     name: string;
@@ -15,6 +16,7 @@ export class HTTPRouter {
         keys: string[];
         handler: HeliumHTTPDef;
     }> = [];
+    private middleware: HeliumMiddleware | null = null;
 
     registerRoutes(routes: HTTPRoute[]) {
         for (const route of routes) {
@@ -27,6 +29,10 @@ export class HTTPRouter {
                 handler: route.handler,
             });
         }
+    }
+
+    setMiddleware(middleware: HeliumMiddleware) {
+        this.middleware = middleware;
     }
 
     async handleRequest(req: IncomingMessage, res: ServerResponse, ctx?: unknown): Promise<boolean> {
@@ -60,7 +66,36 @@ export class HTTPRouter {
                     }
                 }
                 const httpRequest = await createHTTPRequest(req, query, params);
-                const result = await route.handler.handler(httpRequest, ctx);
+
+                let result: any;
+                const httpCtx = (ctx as Record<string, unknown>) || {};
+
+                // Execute middleware if present
+                if (this.middleware) {
+                    let nextCalled = false;
+                    await this.middleware.handler(
+                        {
+                            ctx: httpCtx,
+                            type: "http",
+                            httpMethod: method,
+                            httpPath: pathname,
+                        },
+                        async () => {
+                            nextCalled = true;
+                            result = await route.handler.handler(httpRequest, httpCtx);
+                        }
+                    );
+
+                    // If next() was not called, the middleware blocked the request
+                    if (!nextCalled) {
+                        res.writeHead(403, { "Content-Type": "application/json" });
+                        res.end(JSON.stringify({ error: "Request blocked by middleware" }));
+                        return true;
+                    }
+                } else {
+                    // No middleware, execute handler directly
+                    result = await route.handler.handler(httpRequest, httpCtx);
+                }
 
                 if (result instanceof Response) {
                     res.statusCode = result.status;

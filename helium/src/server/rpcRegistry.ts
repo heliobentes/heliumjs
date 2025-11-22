@@ -1,14 +1,20 @@
-import WebSocket from 'ws';
+import WebSocket from "ws";
 
-import type { RpcRequest, RpcResponse } from '../runtime/protocol.js';
-import type { HeliumMethodDef } from './defineMethod.js';
+import type { RpcRequest, RpcResponse } from "../runtime/protocol.js";
+import type { HeliumMethodDef } from "./defineMethod.js";
+import type { HeliumMiddleware } from "./middleware.js";
 
 export class RpcRegistry {
     private methods = new Map<string, HeliumMethodDef<any, any>>();
+    private middleware: HeliumMiddleware | null = null;
 
     register(id: string, def: HeliumMethodDef<any, any>) {
         def.__id = id;
         this.methods.set(id, def);
+    }
+
+    setMiddleware(middleware: HeliumMiddleware) {
+        this.middleware = middleware;
     }
 
     async handleMessage(socket: WebSocket, raw: string) {
@@ -32,7 +38,38 @@ export class RpcRegistry {
 
         try {
             const ctx = {}; // TODO: add real context
-            const result = await def.handler(req.args, ctx);
+            let result: any;
+
+            // Execute middleware if present
+            if (this.middleware) {
+                let nextCalled = false;
+                await this.middleware.handler(
+                    {
+                        ctx,
+                        type: "method",
+                        methodName: req.method,
+                    },
+                    async () => {
+                        nextCalled = true;
+                        result = await def.handler(req.args, ctx);
+                    }
+                );
+
+                // If next() was not called, the middleware blocked the request
+                if (!nextCalled) {
+                    const res: RpcResponse = {
+                        id: req.id,
+                        ok: false,
+                        error: { message: "Request blocked by middleware" },
+                    };
+                    socket.send(JSON.stringify(res));
+                    return;
+                }
+            } else {
+                // No middleware, execute handler directly
+                result = await def.handler(req.args, ctx);
+            }
+
             const res: RpcResponse = {
                 id: req.id,
                 ok: true,
@@ -43,7 +80,7 @@ export class RpcRegistry {
             const res: RpcResponse = {
                 id: req.id,
                 ok: false,
-                error: { message: err?.message ?? 'Server error' },
+                error: { message: err?.message ?? "Server error" },
             };
             socket.send(JSON.stringify(res));
         }

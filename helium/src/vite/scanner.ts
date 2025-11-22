@@ -13,9 +13,15 @@ export interface HTTPHandlerExport {
     filePath: string;
 }
 
+export interface MiddlewareExport {
+    name: string;
+    filePath: string;
+}
+
 export interface ServerExports {
     methods: MethodExport[];
     httpHandlers: HTTPHandlerExport[];
+    middleware?: MiddlewareExport;
 }
 
 export function scanServerMethods(root: string): MethodExport[] {
@@ -31,6 +37,7 @@ export function scanServerExports(root: string): ServerExports {
 
     const methods: MethodExport[] = [];
     const httpHandlers: HTTPHandlerExport[] = [];
+    let middleware: MiddlewareExport | undefined;
 
     function walk(dir: string) {
         const files = fs.readdirSync(dir);
@@ -42,6 +49,27 @@ export function scanServerExports(root: string): ServerExports {
                 walk(fullPath);
             } else if (file.endsWith(".ts")) {
                 const content = fs.readFileSync(fullPath, "utf-8");
+
+                // Check for _middleware.ts file
+                if (file === "_middleware.ts") {
+                    // Support both 'middleware' and 'defineMiddleware' (backwards compatibility)
+                    const middlewareRegex = /export\s+(const|default)\s+(\w+)\s*=\s*(middleware|defineMiddleware)/;
+                    const match = middlewareRegex.exec(content);
+                    if (match) {
+                        middleware = {
+                            name: match[2],
+                            filePath: fullPath,
+                        };
+                    }
+                    // Also support default export
+                    const defaultRegex = /export\s+default\s+(middleware|defineMiddleware)/;
+                    if (defaultRegex.test(content)) {
+                        middleware = {
+                            name: "default",
+                            filePath: fullPath,
+                        };
+                    }
+                }
 
                 // Find: export const methodName = defineMethod(...)
                 const methodRegex = /export\s+const\s+(\w+)\s*=\s*defineMethod/g;
@@ -66,5 +94,5 @@ export function scanServerExports(root: string): ServerExports {
     }
 
     walk(serverDir);
-    return { methods, httpHandlers };
+    return { methods, httpHandlers, middleware };
 }

@@ -116,8 +116,8 @@ export default function helium(): Plugin {
                 return generateClientModule(methods);
             }
             if (id === RESOLVED_VIRTUAL_SERVER_MANIFEST_ID) {
-                const { methods, httpHandlers } = scanServerExports(root);
-                return generateServerManifest(methods, httpHandlers);
+                const { methods, httpHandlers, middleware } = scanServerExports(root);
+                return generateServerManifest(methods, httpHandlers, middleware);
             }
             if (id === RESOLVED_VIRTUAL_ENTRY_MODULE_ID + ".tsx") {
                 return generateEntryModule();
@@ -161,12 +161,17 @@ export default function helium(): Plugin {
                     const mod = await server.ssrLoadModule(VIRTUAL_SERVER_MANIFEST_ID);
                     const registerAll = mod.registerAll;
                     const httpHandlers = mod.httpHandlers || [];
+                    const middlewareHandler = mod.middlewareHandler || null;
 
                     // Update the dev server registry with new methods and HTTP handlers
                     if (server.httpServer) {
                         attachToDevServer(server.httpServer, (registry, httpRouter) => {
                             registerAll(registry);
                             httpRouter.registerRoutes(httpHandlers);
+                            if (middlewareHandler) {
+                                registry.setMiddleware(middlewareHandler);
+                                httpRouter.setMiddleware(middlewareHandler);
+                            }
                         });
                     }
                 } catch (e) {
@@ -222,11 +227,16 @@ export default function helium(): Plugin {
                     const mod = await server.ssrLoadModule(VIRTUAL_SERVER_MANIFEST_ID);
                     const registerAll = mod.registerAll;
                     const httpHandlers = mod.httpHandlers || [];
+                    const middlewareHandler = mod.middlewareHandler || null;
 
                     if (server.httpServer) {
                         attachToDevServer(server.httpServer, (registry, httpRouter) => {
                             registerAll(registry);
                             httpRouter.registerRoutes(httpHandlers);
+                            if (middlewareHandler) {
+                                registry.setMiddleware(middlewareHandler);
+                                httpRouter.setMiddleware(middlewareHandler);
+                            }
                         });
                     }
                 } catch (e) {

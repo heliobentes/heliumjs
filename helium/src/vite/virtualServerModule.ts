@@ -1,10 +1,11 @@
 import path from "path";
 
-import { HTTPHandlerExport, MethodExport } from "./scanner.js";
+import { HTTPHandlerExport, MethodExport, MiddlewareExport } from "./scanner.js";
 
-export function generateServerManifest(methods: MethodExport[], httpHandlers: HTTPHandlerExport[]): string {
+export function generateServerManifest(methods: MethodExport[], httpHandlers: HTTPHandlerExport[], middleware?: MiddlewareExport): string {
     const methodImports = methods.map((m, i) => `import { ${m.name} as method_${i} } from '${m.filePath}';`).join("\n");
     const httpImports = httpHandlers.map((h, i) => `import { ${h.name} as http_${i} } from '${h.filePath}';`).join("\n");
+    const middlewareImport = middleware ? `import ${middleware.name === "default" ? "middleware" : `{ ${middleware.name} as middleware }`} from '${middleware.filePath}';` : "";
 
     const methodRegistrations = methods.map((m, i) => `  registry.register('${m.name}', method_${i});`).join("\n");
 
@@ -13,6 +14,7 @@ export function generateServerManifest(methods: MethodExport[], httpHandlers: HT
     return `
 ${methodImports}
 ${httpImports}
+${middlewareImport}
 
 export function registerAll(registry) {
 ${methodRegistrations}
@@ -21,6 +23,8 @@ ${methodRegistrations}
 export const httpHandlers = [
 ${httpExports}
 ];
+
+export const middlewareHandler = ${middleware ? "middleware" : "null"};
 `;
 }
 
