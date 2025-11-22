@@ -1,5 +1,7 @@
 import type { ComponentType } from "react";
 
+import { log } from "../utils/logger.js";
+
 export type LayoutProps = {
     children: React.ReactNode;
 };
@@ -67,7 +69,7 @@ function createMatcher(pattern: string) {
 
             // Catch-all must be the last segment
             if (catchAllIndex !== segments.length - 1) {
-                console.warn(`[Helium] Catch-all segment must be last: ${pattern}`);
+                log("warn", `Catch-all segment must be last: ${pattern}`);
                 return null;
             }
 
@@ -171,7 +173,7 @@ export function buildRoutes(): {
 
         const Component = (mod as any).default;
         if (!Component) {
-            console.warn(`[Helium] ➜ No default export found in ${file}`);
+            log("warn", `No default export found in ${file}`);
             continue;
         }
 

@@ -5,7 +5,7 @@ const profile = {
     email: "john@example.com",
 };
 
-export const getProfile = defineMethod(async () => {
+export const getProfile = defineMethod(async (_args: null, _ctx) => {
     return { ...profile };
 });
 

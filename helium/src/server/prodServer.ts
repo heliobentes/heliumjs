@@ -1,12 +1,13 @@
-import fs from 'fs';
-import http from 'http';
-import path from 'path';
-import type WebSocket from 'ws';
-import { WebSocketServer } from 'ws';
+import fs from "fs";
+import http from "http";
+import path from "path";
+import type WebSocket from "ws";
+import { WebSocketServer } from "ws";
 
 import { injectEnvToProcess, loadEnvFiles } from "../utils/envLoader.js";
-import { HTTPRouter } from './httpRouter.js';
-import { RpcRegistry } from './rpcRegistry.js';
+import { log } from "../utils/logger.js";
+import { HTTPRouter } from "./httpRouter.js";
+import { RpcRegistry } from "./rpcRegistry.js";
 
 interface ProdServerOptions {
     port?: number;
@@ -36,7 +37,9 @@ export function startProdServer(options: ProdServerOptions) {
     const server = http.createServer(async (req, res) => {
         // Try HTTP handlers first (webhooks, auth, etc.)
         const handled = await httpRouter.handleRequest(req, res);
-        if (handled) return;
+        if (handled) {
+            return;
+        }
 
         // Serve static files
         const url = req.url || "/";
@@ -109,9 +112,9 @@ export function startProdServer(options: ProdServerOptions) {
 
     // Start server
     server.listen(port, () => {
-        console.log(`[Helium] ➜ Production server listening on http://localhost:${port}`);
-        console.log(`[Helium] ➜ Serving static files from ${staticDir}`);
-        console.log(`[Helium] ➜ WebSocket RPC available at ws://localhost:${port}/rpc`);
+        log("info", `Production server listening on http://localhost:${port}`);
+        log("info", `Serving static files from ${staticDir}`);
+        log("info", `WebSocket RPC available at ws://localhost:${port}/rpc`);
     });
 
     return server;

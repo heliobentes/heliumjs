@@ -1,12 +1,13 @@
-import type http from 'http';
-import type http2 from 'http2';
-import type https from 'https';
-import type WebSocket from 'ws';
-import { WebSocketServer } from 'ws';
+import type http from "http";
+import type http2 from "http2";
+import type https from "https";
+import type WebSocket from "ws";
+import { WebSocketServer } from "ws";
 
 import { injectEnvToProcess, loadEnvFiles } from "../utils/envLoader.js";
-import { HTTPRouter } from './httpRouter.js';
-import { RpcRegistry } from './rpcRegistry.js';
+import { log } from "../utils/logger.js";
+import { HTTPRouter } from "./httpRouter.js";
+import { RpcRegistry } from "./rpcRegistry.js";
 
 type LoadHandlersFn = (registry: RpcRegistry, httpRouter: HTTPRouter) => void;
 type HttpServer = http.Server | https.Server | http2.Http2Server | http2.Http2SecureServer;
@@ -52,7 +53,7 @@ export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHand
             }
         });
 
-        console.log("[Helium] ➜ WebSocket RPC attached to dev server at /rpc");
+        log("info", "WebSocket RPC attached to dev server at /rpc");
     }
 
     // Attach HTTP request handler
@@ -64,7 +65,9 @@ export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHand
         // Try HTTP handlers first
         if (currentHttpRouter) {
             const handled = await currentHttpRouter.handleRequest(req, res);
-            if (handled) return;
+            if (handled) {
+                return;
+            }
         }
 
         // If no handler matched, pass to original Vite handlers

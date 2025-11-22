@@ -4,6 +4,7 @@ import type { Plugin } from "vite";
 
 import { attachToDevServer } from "../server/devServer.js";
 import { createEnvDefines, injectEnvToProcess, loadEnvFiles } from "../utils/envLoader.js";
+import { log } from "../utils/logger.js";
 import {
     RESOLVED_VIRTUAL_CLIENT_MODULE_ID,
     RESOLVED_VIRTUAL_ENTRY_MODULE_ID,
@@ -175,7 +176,7 @@ export default function helium(): Plugin {
                         });
                     }
                 } catch (e) {
-                    console.error("[Helium] ➜ Failed to reload Helium server manifest", e);
+                    log("error", "Failed to reload Helium server manifest", e);
                 }
 
                 // Trigger HMR for any client code that imports helium/server
@@ -240,7 +241,7 @@ export default function helium(): Plugin {
                         });
                     }
                 } catch (e) {
-                    console.error("[Helium] ➜ Failed to attach Helium RPC server", e);
+                    log("error", "Failed to attach Helium RPC server", e);
                 }
             });
         },

@@ -9,7 +9,6 @@ import { middleware } from "helium/server";
  * - Can block requests by not calling next()
  */
 export default middleware(async (context, next) => {
-    console.log("🚀 ~ context:", context);
     const timestamp = new Date().toISOString();
 
     if (context.type === "method") {
