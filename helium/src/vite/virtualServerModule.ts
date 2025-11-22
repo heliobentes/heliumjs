@@ -51,7 +51,8 @@ export function generateTypeDefinitions(methods: MethodExport[], root: string): 
         })
         .join("\n");
 
-    return `/**
+    return `/* eslint-disable */
+/**
 * Auto generated file - DO NOT EDIT!
 * # Helium Server Type Definitions    
 **/

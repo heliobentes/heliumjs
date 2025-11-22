@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
 * Auto generated file - DO NOT EDIT!
 * # Helium Server Type Definitions    
