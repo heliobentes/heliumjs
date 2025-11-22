@@ -134,3 +134,4 @@ Simple, file-based, strongly typed, and WebSocket-native.
 ## While generating code
 
 - Do not use `any` type.
+- If you need to run commands on the terminal, use an existing terminal instead of creating a new one.

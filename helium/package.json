@@ -1,6 +1,9 @@
 {
     "name": "helium",
     "version": "0.0.1",
+    "bin": {
+        "helium": "./dist/bin/helium.js"
+    },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "type": "module",
