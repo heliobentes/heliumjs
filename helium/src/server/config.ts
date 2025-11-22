@@ -52,6 +52,11 @@ export interface HeliumSecurityConfig {
     trustProxyDepth?: number;
 }
 
+/**
+ * Top-level Helium configuration object that may be provided by the user
+ * in `helium.config.*` files. Currently the only supported section is
+ * `security` which configures rate-limiting and related protections.
+ */
 export interface HeliumConfig {
     /**
      * Security and rate limiting configuration

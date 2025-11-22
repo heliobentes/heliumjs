@@ -5,11 +5,27 @@ import { invalidateByMethod } from "./cache.js";
 import { rpcCall } from "./rpcClient.js";
 import type { MethodStub } from "./types.js";
 
+/**
+ * Options passed to `useCall`.
+ *
+ * - invalidate: array of MethodStubs whose cache entries will be invalidated
+ *   when this call completes successfully (useful to refresh related reads).
+ * - onSuccess: optional callback that receives the result on success.
+ */
 type UseCallOptions = {
     invalidate?: MethodStub[];
     onSuccess?: (result: unknown) => void;
 };
 
+/**
+ * React hook for imperative RPC calls (commonly used for mutations).
+ *
+ * @template TArgs - argument type for the method
+ * @template TResult - expected result type
+ * @param method - MethodStub identifying the server method to call
+ * @param options - UseCallOptions to control invalidation / callbacks
+ * @returns { data, call, isCalling, error, stats } where `call(args)` triggers the RPC and returns the result
+ */
 export function useCall<TArgs, TResult>(method: MethodStub<TArgs, TResult>, options: UseCallOptions = {}) {
     const [data, setData] = useState<TResult | undefined>(undefined);
     const [isCalling, setCalling] = useState(false);

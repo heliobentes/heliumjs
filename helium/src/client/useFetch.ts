@@ -5,6 +5,15 @@ import { cacheKey, get, has, invalidateAll, set, subscribeInvalidations } from "
 import { rpcCall } from "./rpcClient.js";
 import type { MethodStub } from "./types.js";
 
+/**
+ * Options controlling `useFetch` behaviour.
+ *
+ * - ttl: optional time-to-live for the cached response (milliseconds).
+ * - refetchOnWindowFocus: when true the hook will invalidate cache on
+ *   window focus/visibility change and re-run the fetch.
+ * - enabled: disable automatic fetching (defaults to true) — useful when
+ *   you only want to fetch when a required value (e.g. id) is present.
+ */
 export interface UseFetchOptions {
     ttl?: number; // TTL in milliseconds
     refetchOnWindowFocus?: boolean; // Whether to refetch when tab becomes visible
@@ -31,6 +40,16 @@ function registerVisibilityListener() {
     });
 }
 
+/**
+ * React hook for fetching and caching the result of a server method.
+ *
+ * @template TArgs - method argument type
+ * @template TResult - expected return type
+ * @param method - a MethodStub representing the server method to call
+ * @param args - optional argument object passed to the server method
+ * @param options - controls caching and refetch behavior (see UseFetchOptions)
+ * @returns { data, isLoading, error, stats, refetch } — `data` is the cached or latest value; `refetch` triggers an immediate request
+ */
 export function useFetch<TArgs, TResult>(method: MethodStub<TArgs, TResult>, args?: TArgs, options?: UseFetchOptions) {
     const key = cacheKey(method.__id, args);
     const { ttl, refetchOnWindowFocus = true, enabled = true } = options ?? {};

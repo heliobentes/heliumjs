@@ -205,6 +205,12 @@ async function createHTTPRequest(req: IncomingMessage, query: Record<string, str
         formData: async () => {
             throw new Error("FormData not yet implemented");
         },
+        /**
+         * Convert the normalized HTTPRequest into a standard Web `Request`.
+         * This mirrors the shape used in defineHTTPRequest's interface and
+         * is useful for passing the request into code that expects the Web
+         * Fetch Request API (for example third-party handlers or libraries).
+         */
         toWebRequest: async () => {
             const protocol = (req.headers["x-forwarded-proto"] as string) || "http";
             const host = (req.headers["host"] as string) || "localhost";

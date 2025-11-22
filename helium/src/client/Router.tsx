@@ -82,6 +82,13 @@ type RouterContext = {
 
 const RouterContext = React.createContext<RouterContext | null>(null);
 
+/**
+ * Access router context inside a component tree managed by <AppRouter />.
+ *
+ * Provides current path, route params, URL search params and navigation helpers
+ * (`push`, `replace`) as well as an `on` method to subscribe to navigation events.
+ * Throws when used outside of an <AppRouter /> provider.
+ */
 export function useRouter() {
     const ctx = React.useContext(RouterContext);
     if (!ctx) {
@@ -139,6 +146,12 @@ function pointerenterHandler(e: React.PointerEvent<HTMLAnchorElement>) {
     document.head.appendChild(prefetcher);
 }
 
+/**
+ * Client-side navigation link.
+ *
+ * Intercepts left-clicks and uses the router's navigation helpers for SPA
+ * navigation. Keeps normal anchor behaviour when modifier keys are used.
+ */
 export function Link(props: LinkProps) {
     const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (
@@ -155,7 +168,6 @@ export function Link(props: LinkProps) {
         navigate(props.href, props.replace);
         props.onClick?.(e);
     };
-
     const { children, href, className, ...safeProps } = props;
 
     return (
@@ -166,6 +178,11 @@ export function Link(props: LinkProps) {
 }
 
 // AppShell props type
+/**
+ * Props passed to an optional `AppShell` wrapper component used by <AppRouter />.
+ *
+ * `Component` — the page component to render. `pageProps` — props provided to the page.
+ */
 export type AppShellProps = {
     Component: ComponentType<any>;
     pageProps: any;

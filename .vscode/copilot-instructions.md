@@ -135,6 +135,7 @@ Simple, file-based, strongly typed, and WebSocket-native.
 
 - Do not use `any` type.
 - If you need to run commands on the terminal, use an existing terminal instead of creating a new one.
+- Make sure you update JSDoc comments for all functions and classes you modify.
 
 ## Running the APP
 - Do not generate code to run the app. Ask the user to run the app and check for terminal output if needed.

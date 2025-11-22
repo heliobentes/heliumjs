@@ -19,6 +19,17 @@ export interface HeliumMiddleware {
     handler: MiddlewareFunction;
 }
 
+/**
+ * Create a Helium middleware wrapper from a function.
+ *
+ * Middleware receives a `MiddlewareContext` and a `next` callback. Use it
+ * to implement cross-cutting concerns such as auth, logging or request guards.
+ * Returning without calling `next()` prevents the underlying handler from
+ * executing (useful for access control).
+ *
+ * @param handler - middleware function with signature (context, next)
+ * @returns a HeliumMiddleware object suitable for registration
+ */
 export function middleware(handler: MiddlewareFunction): HeliumMiddleware {
     if (!handler) {
         throw new Error("middleware requires a handler");
