@@ -1,4 +1,9 @@
+import { useRouter } from "helium/client";
+
 export default function DynamicSlugPage({ params }: { params: { slug: string[] } }) {
+    const router = useRouter();
+    console.log("🚀 ~ DynamicSlugPage ~ router:", router);
+
     return (
         <div>
             <h1 className="text-3xl font-bold mb-4">Dynamic Slug Page</h1>

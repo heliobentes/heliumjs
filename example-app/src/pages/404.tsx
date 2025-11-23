@@ -1,3 +1,4 @@
+"use ssg";
 import { Link } from "helium/client";
 
 export default function NotFoundPage() {

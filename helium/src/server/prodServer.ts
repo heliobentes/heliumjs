@@ -59,19 +59,28 @@ export function startProdServer(options: ProdServerOptions) {
         // Serve static files
         const url = req.url || "/";
         let filePath = path.join(staticDir, url === "/" ? "index.html" : url);
+        let is404 = false;
 
-        // If file doesn't exist, try SSG HTML file (e.g., /contact -> contact.html)
-        if (!fs.existsSync(filePath) && !url.startsWith("/api") && !url.startsWith("/webhooks") && !url.startsWith("/auth")) {
+        // If file doesn't exist or is a directory, try SSG HTML file (e.g., /contact -> contact.html)
+        const isFileOrExists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
+        if (!isFileOrExists && !url.startsWith("/api") && !url.startsWith("/webhooks") && !url.startsWith("/auth")) {
             // Remove leading slash and query params
             const cleanPath = url.split("?")[0].replace(/^\//, "");
-            
+
             // Try SSG HTML file
             const ssgPath = path.join(staticDir, `${cleanPath}.html`);
             if (fs.existsSync(ssgPath)) {
                 filePath = ssgPath;
             } else {
-                // Fall back to index.html for SPA routing
-                filePath = path.join(staticDir, "index.html");
+                // Check if 404.html exists for proper 404 handling
+                const notFoundPath = path.join(staticDir, "404.html");
+                if (fs.existsSync(notFoundPath)) {
+                    filePath = notFoundPath;
+                    is404 = true;
+                } else {
+                    // Fall back to index.html for SPA routing
+                    filePath = path.join(staticDir, "index.html");
+                }
             }
         }
 
@@ -121,9 +130,12 @@ export function startProdServer(options: ProdServerOptions) {
                 content = Buffer.from(injected);
             }
 
-            res.writeHead(200, { "Content-Type": contentType });
+            // Set status code to 404 if serving the 404 page
+            const statusCode = is404 ? 404 : 200;
+            res.writeHead(statusCode, { "Content-Type": contentType });
             res.end(content);
-        } catch {
+        } catch (error) {
+            log("error", "Error serving file:", error);
             res.writeHead(500, { "Content-Type": "text/plain" });
             res.end("Internal server error");
         }
