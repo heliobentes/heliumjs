@@ -8,7 +8,7 @@ import { injectEnvToProcess, loadEnvFiles } from "../utils/envLoader.js";
 import { extractClientIP } from "../utils/ipExtractor.js";
 import { log } from "../utils/logger.js";
 import type { HeliumConfig } from "./config.js";
-import { getSecurityConfig } from "./config.js";
+import { getCompressionConfig, getSecurityConfig } from "./config.js";
 import { HTTPRouter } from "./httpRouter.js";
 import { RateLimiter } from "./rateLimiter.js";
 import { RpcRegistry } from "./rpcRegistry.js";
@@ -37,6 +37,7 @@ export function startProdServer(options: ProdServerOptions) {
 
     // Initialize security with config
     const securityConfig = getSecurityConfig(config);
+    const compressionConfig = getCompressionConfig(config);
     initializeSecurity(securityConfig);
 
     // Initialize rate limiter
@@ -142,7 +143,22 @@ export function startProdServer(options: ProdServerOptions) {
     });
 
     // Setup WebSocket server for RPC
-    const wss = new WebSocketServer({ noServer: true });
+    const wss = new WebSocketServer({
+        noServer: true,
+        perMessageDeflate: compressionConfig.enabled
+            ? {
+                  zlibDeflateOptions: {
+                      chunkSize: 1024,
+                      memLevel: 7,
+                      level: 3, // Lower = faster, higher = better compression (1-9)
+                  },
+                  zlibInflateOptions: {
+                      chunkSize: 10 * 1024,
+                  },
+                  threshold: compressionConfig.threshold,
+              }
+            : false,
+    });
 
     wss.on("connection", (socket: WebSocket, req: http.IncomingMessage) => {
         // Extract client IP with proxy configuration

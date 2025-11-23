@@ -1,4 +1,4 @@
-import { defineMethod } from "helium/server";
+import { defineHTTPRequest, defineMethod } from "helium/server";
 
 import { Task } from "../../types/task";
 import { TaskModel } from "../models/Task";
@@ -12,6 +12,20 @@ export const getTasks = defineMethod(async (args?: { status?: string }) => {
         name: task.name,
         status: task.status,
     })) as Task[];
+});
+
+export const getTasksByHttp = defineHTTPRequest("GET", "/api/get-tasks", async (req, res) => {
+    const { status } = req.query || undefined;
+    const filter = status ? { status } : {};
+    const tasks = await TaskModel.find(filter).sort({ createdAt: -1 });
+
+    const response = tasks.map((task) => ({
+        id: task._id.toString(),
+        name: task.name,
+        status: task.status,
+    })) as Task[];
+
+    return response;
 });
 
 export const getTaskById = defineMethod(async (args: { id: string }) => {

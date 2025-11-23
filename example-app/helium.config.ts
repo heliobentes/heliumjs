@@ -53,6 +53,22 @@ const config: HeliumConfig = {
          */
         trustProxyDepth: 0,
     },
+
+    compression: {
+        /**
+         * Enable WebSocket per-message compression (permessage-deflate extension).
+         * Compresses messages on the wire to reduce bandwidth and speed up transmission.
+         * @default true
+         */
+        enabled: true,
+
+        /**
+         * Minimum message size in bytes to apply compression.
+         * Messages smaller than this will not be compressed to avoid overhead.
+         * @default 1024 (1KB)
+         */
+        threshold: 1024,
+    },
 };
 
 export default config;

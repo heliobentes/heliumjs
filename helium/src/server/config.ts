@@ -2,6 +2,23 @@ import fs from "fs";
 import path from "path";
 import { pathToFileURL } from "url";
 
+export interface HeliumCompressionConfig {
+    /**
+     * Enable WebSocket per-message compression (permessage-deflate extension).
+     * This compresses messages on the wire to reduce bandwidth usage.
+     * @default true
+     */
+    enabled?: boolean;
+
+    /**
+     * Minimum message size in bytes to apply compression.
+     * Messages smaller than this will not be compressed to avoid overhead.
+     * Only applies when enabled is true.
+     * @default 1024 (1KB)
+     */
+    threshold?: number;
+}
+
 export interface HeliumSecurityConfig {
     /**
      * Maximum number of WebSocket connections allowed per IP address.
@@ -54,14 +71,18 @@ export interface HeliumSecurityConfig {
 
 /**
  * Top-level Helium configuration object that may be provided by the user
- * in `helium.config.*` files. Currently the only supported section is
- * `security` which configures rate-limiting and related protections.
+ * in `helium.config.*` files.
  */
 export interface HeliumConfig {
     /**
      * Security and rate limiting configuration
      */
     security?: HeliumSecurityConfig;
+
+    /**
+     * WebSocket compression configuration
+     */
+    compression?: HeliumCompressionConfig;
 }
 
 const DEFAULT_CONFIG: Required<HeliumSecurityConfig> = {
@@ -70,6 +91,11 @@ const DEFAULT_CONFIG: Required<HeliumSecurityConfig> = {
     rateLimitWindowMs: 60000,
     tokenValidityMs: 30000,
     trustProxyDepth: 0,
+};
+
+const DEFAULT_COMPRESSION: Required<HeliumCompressionConfig> = {
+    enabled: true,
+    threshold: 1024,
 };
 
 let cachedConfig: HeliumConfig | null = null;
@@ -107,6 +133,13 @@ export function getSecurityConfig(config: HeliumConfig = {}): Required<HeliumSec
         rateLimitWindowMs: config.security?.rateLimitWindowMs ?? DEFAULT_CONFIG.rateLimitWindowMs,
         tokenValidityMs: config.security?.tokenValidityMs ?? DEFAULT_CONFIG.tokenValidityMs,
         trustProxyDepth: config.security?.trustProxyDepth ?? DEFAULT_CONFIG.trustProxyDepth,
+    };
+}
+
+export function getCompressionConfig(config: HeliumConfig = {}): Required<HeliumCompressionConfig> {
+    return {
+        enabled: config.compression?.enabled ?? DEFAULT_COMPRESSION.enabled,
+        threshold: config.compression?.threshold ?? DEFAULT_COMPRESSION.threshold,
     };
 }
 
