@@ -1,3 +1,4 @@
+import { decode as msgpackDecode, encode as msgpackEncode } from "@msgpack/msgpack";
 import type http from "http";
 import WebSocket from "ws";
 
@@ -17,10 +18,15 @@ export class RpcRegistry {
     private middleware: HeliumMiddleware | null = null;
     private rateLimiter: RateLimiter | null = null;
     private socketMetadata = new WeakMap<WebSocket, SocketMetadata>();
+    private rpcEncoding: "json" | "msgpack" = "msgpack";
 
     register(id: string, def: HeliumMethodDef<any, any>) {
         def.__id = id;
         this.methods.set(id, def);
+    }
+
+    setRpcEncoding(encoding: "json" | "msgpack") {
+        this.rpcEncoding = encoding;
     }
 
     setMiddleware(middleware: HeliumMiddleware) {
@@ -58,10 +64,15 @@ export class RpcRegistry {
         };
     }
 
-    async handleMessage(socket: WebSocket, raw: string) {
+    async handleMessage(socket: WebSocket, raw: string | Buffer) {
         let req: RpcRequest;
         try {
-            req = JSON.parse(raw);
+            // Handle both binary (MessagePack) and text (JSON) messages
+            if (Buffer.isBuffer(raw)) {
+                req = msgpackDecode(raw) as RpcRequest;
+            } else {
+                req = JSON.parse(raw);
+            }
         } catch {
             return;
         }
@@ -74,7 +85,11 @@ export class RpcRegistry {
                 stats: this.getStats(socket),
                 error: `Unknown method ${req.method}`,
             };
-            socket.send(JSON.stringify(res));
+            if (this.rpcEncoding === "msgpack") {
+                socket.send(msgpackEncode(res) as Buffer);
+            } else {
+                socket.send(JSON.stringify(res));
+            }
             return;
         }
 
@@ -115,7 +130,11 @@ export class RpcRegistry {
                         stats: this.getStats(socket),
                         error: "Request blocked by middleware",
                     };
-                    socket.send(JSON.stringify(res));
+                    if (this.rpcEncoding === "msgpack") {
+                        socket.send(msgpackEncode(res) as Buffer);
+                    } else {
+                        socket.send(JSON.stringify(res));
+                    }
                     return;
                 }
             } else {
@@ -129,7 +148,11 @@ export class RpcRegistry {
                 stats: this.getStats(socket),
                 result,
             };
-            socket.send(JSON.stringify(res));
+            if (this.rpcEncoding === "msgpack") {
+                socket.send(msgpackEncode(res) as Buffer);
+            } else {
+                socket.send(JSON.stringify(res));
+            }
         } catch (err: any) {
             const res: RpcResponse = {
                 id: req.id,
@@ -137,7 +160,11 @@ export class RpcRegistry {
                 stats: this.getStats(socket),
                 error: err?.message ?? "Server error",
             };
-            socket.send(JSON.stringify(res));
+            if (this.rpcEncoding === "msgpack") {
+                socket.send(msgpackEncode(res) as Buffer);
+            } else {
+                socket.send(JSON.stringify(res));
+            }
         }
     }
 }

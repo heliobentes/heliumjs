@@ -1,3 +1,5 @@
+import { decode as msgpackDecode, encode as msgpackEncode } from "@msgpack/msgpack";
+
 import type { RpcRequest, RpcResponse, RpcStats } from "../runtime/protocol.js";
 
 export type RpcResult<T> = {
@@ -8,6 +10,8 @@ export type RpcResult<T> = {
 declare global {
     interface Window {
         HELIUM_CONNECTION_TOKEN?: string;
+        /** Advertisement from server - preferred RPC encoding, "json" or "msgpack" */
+        HELIUM_RPC_ENCODING?: "json" | "msgpack";
     }
 }
 
@@ -27,9 +31,33 @@ function createSocket(): WebSocket {
     const token = window.HELIUM_CONNECTION_TOKEN;
     const url = `${protocol}//${host}/rpc${token ? `?token=${token}` : ""}`;
     const ws = new WebSocket(url);
+    ws.binaryType = "arraybuffer";
+
+    // Determine client-side encoding preference from server-injected global (falls back to msgpack)
+    const clientEncoding: "json" | "msgpack" = (window.HELIUM_RPC_ENCODING as any) || "msgpack";
 
     ws.onmessage = (event) => {
-        const msg: RpcResponse = JSON.parse(event.data);
+        let msg: RpcResponse;
+
+        // Handle both binary (MessagePack) and text (JSON) messages.
+        // Accept either format so server & client can be configured independently while remaining compatible.
+        if (event.data instanceof ArrayBuffer) {
+            msg = msgpackDecode(new Uint8Array(event.data)) as RpcResponse;
+        } else {
+            // If the server advertises JSON we parse JSON, otherwise attempt JSON parse and fall back to msgpack decode
+            if (clientEncoding === "json") {
+                msg = JSON.parse(event.data);
+            } else {
+                // Try JSON first (string) — if it isn't JSON, decode as msgpack binary
+                try {
+                    msg = JSON.parse(event.data);
+                } catch {
+                    // Sometimes servers send binary even if configured; handle it defensively
+                    msg = msgpackDecode(new Uint8Array(event.data)) as RpcResponse;
+                }
+            }
+        }
+
         const entry = pending.get(msg.id);
         if (!entry) {
             return;
@@ -143,7 +171,14 @@ export async function rpcCall<TResult = unknown, TArgs = unknown>(methodId: stri
             reject,
         });
         try {
-            ws.send(JSON.stringify(req));
+            // Encode according to preferred transport encoding
+            const clientEncoding: "json" | "msgpack" = (window.HELIUM_RPC_ENCODING as any) || "msgpack";
+            if (clientEncoding === "msgpack") {
+                const encoded = msgpackEncode(req);
+                ws.send(encoded);
+            } else {
+                ws.send(JSON.stringify(req));
+            }
         } catch (err) {
             pending.delete(id);
             reject(err);

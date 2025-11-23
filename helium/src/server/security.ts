@@ -1,16 +1,17 @@
 import crypto from "crypto";
 
 import { log } from "../utils/logger.js";
-import type { HeliumSecurityConfig } from "./config.js";
+import type { HeliumRpcSecurityConfig } from "./config.js";
 
 // Generate a random secret for this server instance if one isn't provided
 const GLOBAL_SECRET_KEY = Symbol.for("helium.server.secret");
 const GLOBAL_CONFIG_KEY = Symbol.for("helium.server.securityConfig");
 
 let SERVER_SECRET: string;
-let SECURITY_CONFIG: Required<HeliumSecurityConfig>;
+// SECURITY_CONFIG stores the RPC-specific security settings
+let SECURITY_CONFIG: Required<HeliumRpcSecurityConfig>;
 
-export function initializeSecurity(config: Required<HeliumSecurityConfig>): void {
+export function initializeSecurity(config: Required<HeliumRpcSecurityConfig>): void {
     const globalSymbols = Object.getOwnPropertySymbols(globalThis);
     const hasSecret = globalSymbols.indexOf(GLOBAL_SECRET_KEY) > -1;
 
@@ -22,7 +23,7 @@ export function initializeSecurity(config: Required<HeliumSecurityConfig>): void
     }
 
     SERVER_SECRET = (globalThis as any)[GLOBAL_SECRET_KEY] as string;
-    SECURITY_CONFIG = (globalThis as any)[GLOBAL_CONFIG_KEY] as Required<HeliumSecurityConfig>;
+    SECURITY_CONFIG = (globalThis as any)[GLOBAL_CONFIG_KEY] as Required<HeliumRpcSecurityConfig>;
 }
 
 export function generateConnectionToken(): string {

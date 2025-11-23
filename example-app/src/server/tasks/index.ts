@@ -5,7 +5,7 @@ import { TaskModel } from "../models/Task";
 
 export const getTasks = defineMethod(async (args?: { status?: string }) => {
     const filter = args?.status ? { status: args.status } : {};
-    const tasks = await TaskModel.find(filter).sort({ createdAt: -1 });
+    const tasks = await TaskModel.find(filter).sort({ createdAt: -1 }).lean();
 
     return tasks.map((task) => ({
         id: task._id.toString(),
@@ -14,10 +14,10 @@ export const getTasks = defineMethod(async (args?: { status?: string }) => {
     })) as Task[];
 });
 
-export const getTasksByHttp = defineHTTPRequest("GET", "/api/get-tasks", async (req, res) => {
+export const getTasksByHttp = defineHTTPRequest("GET", "/api/get-tasks", async (req) => {
     const { status } = req.query || undefined;
     const filter = status ? { status } : {};
-    const tasks = await TaskModel.find(filter).sort({ createdAt: -1 });
+    const tasks = await TaskModel.find(filter).sort({ createdAt: -1 }).lean();
 
     const response = tasks.map((task) => ({
         id: task._id.toString(),

@@ -71,8 +71,10 @@ The `ctx.req.ip` field contains the client's IP address, extracted based on your
 ```typescript
 // helium.config.ts
 const config: HeliumConfig = {
-    security: {
-        trustProxyDepth: 1, // Trust one proxy level (e.g., Vercel)
+    rpc: {
+        security: {
+            trustProxyDepth: 1, // Trust one proxy level (e.g., Vercel)
+        },
     },
 };
 ```

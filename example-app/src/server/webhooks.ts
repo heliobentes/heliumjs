@@ -1,7 +1,7 @@
 import { defineHTTPRequest } from "helium/server";
 
 // Example webhook handler for Stripe
-export const stripeWebhook = defineHTTPRequest("POST", "/webhooks/stripe", async (req, ctx) => {
+export const stripeWebhook = defineHTTPRequest("POST", "/webhooks/stripe", async (req, _ctx) => {
     // In a real app, you would:
     // 1. Get the signature from headers
     // const sig = req.headers['stripe-signature'];
@@ -21,7 +21,7 @@ export const stripeWebhook = defineHTTPRequest("POST", "/webhooks/stripe", async
 });
 
 // Example generic webhook
-export const genericWebhook = defineHTTPRequest("POST", "/webhooks/generic", async (req, ctx) => {
+export const genericWebhook = defineHTTPRequest("POST", "/webhooks/generic", async (req, _ctx) => {
     const payload = await req.json();
 
     console.log("[Generic Webhook] Received payload:", payload);

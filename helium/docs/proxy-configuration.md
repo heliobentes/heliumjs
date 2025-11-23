@@ -16,9 +16,7 @@ Use the `trustProxyDepth` setting in your `helium.config.ts`:
 import type { HeliumConfig } from "helium/server";
 
 const config: HeliumConfig = {
-    security: {
-        trustProxyDepth: 1, // Set based on your deployment
-    },
+    trustProxyDepth: 1, // Set based on your deployment
 };
 
 export default config;
@@ -45,9 +43,7 @@ The `trustProxyDepth` setting tells Helium how many proxy levels to trust:
 ### Vercel / Netlify / Railway
 
 ```typescript
-security: {
-    trustProxyDepth: 1,
-}
+trustProxyDepth: 1
 ```
 
 These platforms add one proxy layer. The `X-Forwarded-For` header will look like:
@@ -62,9 +58,7 @@ X-Forwarded-For: 203.0.113.1, 198.51.100.1
 ### Cloudflare → Your Server
 
 ```typescript
-security: {
-    trustProxyDepth: 1,
-}
+trustProxyDepth: 1
 ```
 
 **Note**: When using Cloudflare, Helium automatically uses the `CF-Connecting-IP` header, which is more reliable than parsing `X-Forwarded-For`.
@@ -72,17 +66,13 @@ security: {
 ### AWS ALB → EC2
 
 ```typescript
-security: {
-    trustProxyDepth: 1,
-}
+trustProxyDepth: 1
 ```
 
 ### Nginx → Node.js
 
 ```typescript
-security: {
-    trustProxyDepth: 1,
-}
+trustProxyDepth: 1
 ```
 
 **Note**: Helium automatically uses Nginx's `X-Real-IP` header when available.
@@ -90,9 +80,7 @@ security: {
 ### Cloudflare → Nginx → Node.js
 
 ```typescript
-security: {
-    trustProxyDepth: 2,
-}
+trustProxyDepth: 2
 ```
 
 With two proxy layers:
@@ -108,9 +96,7 @@ X-Forwarded-For: 203.0.113.1, 198.51.100.1, 192.0.2.1
 ### Local Development
 
 ```typescript
-security: {
-    trustProxyDepth: 0, // Default
-}
+trustProxyDepth: 0 // Default - don't trust any proxies
 ```
 
 No proxies in local development, so use the direct connection IP.

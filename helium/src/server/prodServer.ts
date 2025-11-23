@@ -1,3 +1,4 @@
+import { encode as msgpackEncode } from "@msgpack/msgpack";
 import fs from "fs";
 import http from "http";
 import path from "path";
@@ -8,7 +9,7 @@ import { injectEnvToProcess, loadEnvFiles } from "../utils/envLoader.js";
 import { extractClientIP } from "../utils/ipExtractor.js";
 import { log } from "../utils/logger.js";
 import type { HeliumConfig } from "./config.js";
-import { getCompressionConfig, getSecurityConfig } from "./config.js";
+import { getRpcConfig, getRpcSecurityConfig, getTrustProxyDepth } from "./config.js";
 import { HTTPRouter } from "./httpRouter.js";
 import { RateLimiter } from "./rateLimiter.js";
 import { RpcRegistry } from "./rpcRegistry.js";
@@ -35,17 +36,20 @@ export function startProdServer(options: ProdServerOptions) {
     const envVars = loadEnvFiles({ mode: "production" });
     injectEnvToProcess(envVars);
 
-    // Initialize security with config
-    const securityConfig = getSecurityConfig(config);
-    const compressionConfig = getCompressionConfig(config);
-    initializeSecurity(securityConfig);
+    // Load configuration
+    const trustProxyDepth = getTrustProxyDepth(config);
+    const rpcSecurity = getRpcSecurityConfig(config);
+    const rpcConfig = getRpcConfig(config);
+    const compressionConfig = rpcConfig.compression;
+    initializeSecurity(rpcSecurity);
 
     // Initialize rate limiter
-    const rateLimiter = new RateLimiter(securityConfig.maxMessagesPerWindow, securityConfig.rateLimitWindowMs, securityConfig.maxConnectionsPerIP);
+    const rateLimiter = new RateLimiter(rpcSecurity.maxMessagesPerWindow, rpcSecurity.rateLimitWindowMs, rpcSecurity.maxConnectionsPerIP);
 
     const registry = new RpcRegistry();
+    registry.setRpcEncoding(rpcConfig.encoding);
     const httpRouter = new HTTPRouter();
-    httpRouter.setTrustProxyDepth(securityConfig.trustProxyDepth);
+    httpRouter.setTrustProxyDepth(trustProxyDepth);
     registerHandlers(registry, httpRouter);
     registry.setRateLimiter(rateLimiter);
 
@@ -126,7 +130,10 @@ export function startProdServer(options: ProdServerOptions) {
                     injected = html.replace('"build-time-placeholder"', `"${token}"`);
                 } else {
                     // Inject before </head> (for regular SPA)
-                    injected = html.replace("</head>", `<script>window.HELIUM_CONNECTION_TOKEN = "${token}";</script></head>`);
+                    injected = html.replace(
+                        "</head>",
+                        `<script>window.HELIUM_CONNECTION_TOKEN = "${token}"; window.HELIUM_RPC_ENCODING = "${rpcConfig.encoding}";</script></head>`
+                    );
                 }
                 content = Buffer.from(injected);
             }
@@ -162,7 +169,7 @@ export function startProdServer(options: ProdServerOptions) {
 
     wss.on("connection", (socket: WebSocket, req: http.IncomingMessage) => {
         // Extract client IP with proxy configuration
-        const ip = extractClientIP(req, securityConfig.trustProxyDepth);
+        const ip = extractClientIP(req, trustProxyDepth);
 
         // Store connection metadata for RPC context
         registry.setSocketMetadata(socket, ip, req);
@@ -178,7 +185,14 @@ export function startProdServer(options: ProdServerOptions) {
             if (!rateLimiter.checkRateLimit(socket)) {
                 // Parse request to get the ID for proper error response
                 try {
-                    const req = JSON.parse(msg.toString());
+                    let req: any;
+                    if (Buffer.isBuffer(msg)) {
+                        const { decode: msgpackDecode } = require("@msgpack/msgpack");
+                        req = msgpackDecode(msg);
+                    } else {
+                        req = JSON.parse(msg.toString());
+                    }
+
                     const stats = rateLimiter.getConnectionStats(socket);
                     const now = Date.now();
                     const resetInSeconds = stats ? Math.ceil((stats.resetTimeMs - now) / 1000) : 0;
@@ -193,7 +207,11 @@ export function startProdServer(options: ProdServerOptions) {
                         error: "Rate limit exceeded",
                     };
                     log("warn", `Rate limit exceeded for IP ${ip}, resets in ${resetInSeconds} seconds`);
-                    socket.send(JSON.stringify(errorResponse));
+                    if (rpcConfig.encoding === "msgpack") {
+                        socket.send(msgpackEncode(errorResponse) as Buffer);
+                    } else {
+                        socket.send(JSON.stringify(errorResponse));
+                    }
                 } catch {
                     // If we can't parse the request, just close the connection
                     socket.close();
@@ -201,7 +219,7 @@ export function startProdServer(options: ProdServerOptions) {
                 return;
             }
 
-            registry.handleMessage(socket, msg.toString());
+            registry.handleMessage(socket, Buffer.isBuffer(msg) ? msg : msg.toString());
         });
     });
 
@@ -219,10 +237,10 @@ export function startProdServer(options: ProdServerOptions) {
             }
 
             // Check IP connection limit before upgrading
-            const ip = extractClientIP(req, securityConfig.trustProxyDepth);
-            if (securityConfig.maxConnectionsPerIP > 0) {
+            const ip = extractClientIP(req, trustProxyDepth);
+            if (rpcSecurity.maxConnectionsPerIP > 0) {
                 const currentConnections = rateLimiter.getIPConnectionCount(ip);
-                if (currentConnections >= securityConfig.maxConnectionsPerIP) {
+                if (currentConnections >= rpcSecurity.maxConnectionsPerIP) {
                     log("warn", `WebSocket connection rejected - IP ${ip} has ${currentConnections} connections`);
                     socket.write("HTTP/1.1 429 Too Many Requests\r\n\r\n");
                     socket.destroy();

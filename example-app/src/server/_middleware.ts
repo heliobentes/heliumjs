@@ -11,7 +11,10 @@ import { connectToDatabase } from "./db/connection";
  * - Can block requests by not calling next()
  */
 export default middleware(async (context, next) => {
+    const startTime = performance.now();
     await connectToDatabase();
+    const dbConnectTime = performance.now();
+
     const timestamp = new Date().toISOString();
 
     if (context.type === "method") {
@@ -24,24 +27,23 @@ export default middleware(async (context, next) => {
     context.ctx.requestTimestamp = timestamp;
     context.ctx.requestId = Math.random().toString(36).substring(7);
 
-    // Example: Block unauthenticated requests to certain methods
-    // if (context.type === "method" && context.methodName === "deleteUser") {
-    //     if (!context.ctx.user) {
-    //         console.log("Blocked unauthenticated deleteUser request");
-    //         return; // Don't call next() to block the request
-    //     }
-    // }
-
-    // Example: Connect to a database before handling requests
-    // await connectToDB();
-
     // Call next() to proceed to the handler
+    const handlerStart = performance.now();
     await next();
+    const handlerEnd = performance.now();
+
+    const totalTime = handlerEnd - startTime;
+    const dbTime = dbConnectTime - startTime;
+    const handlerTime = handlerEnd - handlerStart;
 
     // You can also run code after the handler executes
     if (context.type === "method") {
-        console.log(`[${timestamp}] RPC Method ${context.methodName} completed`);
+        console.log(
+            `[${timestamp}] RPC Method ${context.methodName} completed - Total: ${totalTime.toFixed(2)}ms (DB: ${dbTime.toFixed(2)}ms, Handler: ${handlerTime.toFixed(2)}ms)`
+        );
     } else if (context.type === "http") {
-        console.log(`[${timestamp}] HTTP Request ${context.httpMethod} ${context.httpPath} completed`);
+        console.log(
+            `[${timestamp}] HTTP Request ${context.httpMethod} ${context.httpPath} completed - Total: ${totalTime.toFixed(2)}ms (DB: ${dbTime.toFixed(2)}ms, Handler: ${handlerTime.toFixed(2)}ms)`
+        );
     }
 });
