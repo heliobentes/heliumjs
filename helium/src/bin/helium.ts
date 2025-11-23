@@ -146,6 +146,9 @@ startProdServer({
         log("info", "--------------------------------");
         log("info", "✓ Build finished successfully.");
         log("info", "▶ Run 'helium start' to start the production server.");
+
+        // Exit cleanly after build completes
+        process.exit(0);
     } catch (e) {
         log("error", "Server build failed:", e);
         process.exit(1);
