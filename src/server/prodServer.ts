@@ -65,14 +65,14 @@ export function startProdServer(options: ProdServerOptions) {
         const requestedFile = path.basename(url.split("?")[0]);
         let filePath: string;
         let is404 = false;
-        
+
         if (blockedFiles.some((blocked) => requestedFile === blocked || requestedFile.startsWith(".env"))) {
             // Serve index.html so the SPA router can render the 404 page
             filePath = path.join(staticDir, "index.html");
             is404 = true;
         } else {
             filePath = path.join(staticDir, url === "/" ? "index.html" : url);
-            
+
             // If file doesn't exist or is a directory, fall back to index.html for SPA routing
             const isFileOrExists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
             if (!isFileOrExists && !url.startsWith("/api") && !url.startsWith("/webhooks") && !url.startsWith("/auth")) {
