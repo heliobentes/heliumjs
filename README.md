@@ -174,4 +174,12 @@ export default middleware(async (ctx, next) => {
     1.  Builds the client using Vite.
     2.  Scans `src/server` for exports.
     3.  Bundles the server using esbuild.
+    4.  Transpiles `helium.config.ts` to `dist/helium.config.js` (if present).
 -   `helium start`: Runs the bundled server (`dist/server.js`).
+
+## Documentation
+
+-   [Proxy Configuration](./docs/proxy-configuration.md) - Configure IP detection for rate limiting behind proxies
+-   [Production Deployment](./docs/production-deployment.md) - Deploy to production platforms (Digital Ocean, Docker, etc.)
+-   [Context API](./docs/context-api.md) - Use request context for authentication and request metadata
+-   [Route Groups](./docs/route-groups.md) - Organize routes with shared layouts

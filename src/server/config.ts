@@ -174,8 +174,11 @@ let cachedConfig: HeliumConfig | null = null;
 
 /**
  * Load Helium configuration from the project root.
- * Searches for helium.config.ts, helium.config.js, or helium.config.mjs.
+ * Searches for helium.config.js, helium.config.mjs, or helium.config.ts.
  * Results are cached for the lifetime of the process.
+ *
+ * In production, the build process automatically transpiles .ts config files
+ * to .js in the dist directory. The loader checks dist/ first when available.
  *
  * @internal - Used by framework internals only
  */
@@ -184,19 +187,34 @@ export async function loadConfig(root: string = process.cwd()): Promise<HeliumCo
         return cachedConfig;
     }
 
-    const configFiles = ["helium.config.ts", "helium.config.js", "helium.config.mjs"];
+    // Check if there's a custom config directory (used in production)
+    const configDir = process.env.HELIUM_CONFIG_DIR || root;
 
-    for (const configFile of configFiles) {
-        const configPath = path.join(root, configFile);
-        if (fs.existsSync(configPath)) {
-            try {
-                const fileUrl = pathToFileURL(configPath).href;
-                const module = await import(/* @vite-ignore */ `${fileUrl}?t=${Date.now()}`);
-                const config = module.default || {};
-                cachedConfig = config;
-                return config;
-            } catch (err) {
-                console.warn(`[Helium] Failed to load config from ${configFile}:`, err);
+    // Prioritize .js/.mjs (work in both dev and production)
+    // .ts files work in dev with Vite but fail in production without transpilation
+    const configFiles = ["helium.config.js", "helium.config.mjs", "helium.config.ts"];
+
+    // In production with HELIUM_CONFIG_DIR set, check dist directory first
+    const searchPaths = configDir !== root ? [configDir, root] : [root];
+
+    for (const searchPath of searchPaths) {
+        for (const configFile of configFiles) {
+            const configPath = path.join(searchPath, configFile);
+            if (fs.existsSync(configPath)) {
+                try {
+                    const fileUrl = pathToFileURL(configPath).href;
+                    const module = await import(/* @vite-ignore */ `${fileUrl}?t=${Date.now()}`);
+                    const config = module.default || {};
+                    cachedConfig = config;
+                    return config;
+                } catch (err) {
+                    // In production, .ts files will fail to load without a TypeScript loader
+                    if (configFile.endsWith(".ts") && err instanceof Error && "code" in err && err.code === "ERR_UNKNOWN_FILE_EXTENSION") {
+                        console.warn(`[Helium] Cannot load ${configFile} in production. The build process should have transpiled it.`);
+                    } else {
+                        console.warn(`[Helium] Failed to load config from ${configFile}:`, err);
+                    }
+                }
             }
         }
     }

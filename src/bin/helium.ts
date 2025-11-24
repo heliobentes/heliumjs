@@ -103,9 +103,9 @@ log('info', \`Loading .env files from: \${envRoot}\`);
 const envVars = loadEnvFiles({ mode: 'production' });
 injectEnvToProcess(envVars);
 if (Object.keys(envVars).length > 0) {
-    log('info', \`Loaded \${Object.keys(envVars).length} environment variable(s)\`);
+    log('info', \`Loaded \${Object.keys(envVars).length} environment variable(s) from .env files\`);
 } else {
-    log('warn', 'No .env files found or no variables loaded');
+    log('info', 'No .env files found (using platform environment variables if available)');
 }
 `;
 
@@ -163,6 +163,39 @@ if (Object.keys(envVars).length > 0) {
         log("info", `  ${serverOutputPath.padEnd(35)} ${serverSizeKB.padStart(8)} kB`);
 
         log("info", "Server build complete.");
+
+        // Transpile helium.config.ts to helium.config.js if it exists
+        const configTsPath = path.join(root, "helium.config.ts");
+        if (fs.existsSync(configTsPath)) {
+            log("info", "Transpiling helium.config.ts...");
+            try {
+                await esbuild({
+                    entryPoints: [configTsPath],
+                    outfile: path.join(root, "dist", "helium.config.js"),
+                    bundle: false,
+                    platform: "node",
+                    format: "esm",
+                    target: "node18",
+                });
+                log("info", "Config file transpiled to dist/helium.config.js");
+            } catch (e) {
+                log("warn", "Failed to transpile config file:", e);
+                log("warn", "You may need to manually rename helium.config.ts to helium.config.js");
+            }
+        } else {
+            // Check if .js or .mjs config exists and copy it to dist
+            const configJsPath = path.join(root, "helium.config.js");
+            const configMjsPath = path.join(root, "helium.config.mjs");
+
+            if (fs.existsSync(configJsPath)) {
+                fs.copyFileSync(configJsPath, path.join(root, "dist", "helium.config.js"));
+                log("info", "Copied helium.config.js to dist/");
+            } else if (fs.existsSync(configMjsPath)) {
+                fs.copyFileSync(configMjsPath, path.join(root, "dist", "helium.config.mjs"));
+                log("info", "Copied helium.config.mjs to dist/");
+            }
+        }
+
         log("info", "--------------------------------");
         log("info", "✓ Build finished successfully.");
         log("info", "▶ Run 'helium start' to start the production server.");
@@ -182,7 +215,13 @@ cli.command("start", "Start production server").action(async () => {
         process.exit(1);
     }
 
-    const server = spawn("node", [serverPath], { stdio: "inherit", shell: true });
+    // When running in production, look for config in dist directory first
+    // This allows the transpiled config to be found
+    const server = spawn("node", [serverPath], {
+        stdio: "inherit",
+        shell: true,
+        env: { ...process.env, HELIUM_CONFIG_DIR: path.join(root, "dist") },
+    });
     server.on("close", (code) => {
         process.exit(code || 0);
     });
