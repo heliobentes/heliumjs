@@ -16,7 +16,7 @@ import {
     VIRTUAL_ENTRY_MODULE_ID,
     VIRTUAL_SERVER_MANIFEST_ID,
 } from "./paths.js";
-import { scanServerExports } from "./scanner.js";
+import { checkRouteCollisions, scanServerExports } from "./scanner.js";
 import { generateClientModule, generateEntryModule, generateServerManifest, generateTypeDefinitions } from "./virtualServerModule.js";
 
 export default function helium(): Plugin {
@@ -146,6 +146,9 @@ export default function helium(): Plugin {
                 fs.mkdirSync(typesDir, { recursive: true });
             }
             fs.writeFileSync(dtsPath, dts);
+
+            // Check for route collisions in pages directory
+            checkRouteCollisions(root);
         },
         configureServer(server) {
             const regenerateTypes = () => {

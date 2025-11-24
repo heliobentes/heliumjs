@@ -22,6 +22,8 @@ export type RouteEntry = {
  * - /src/pages/settings/profile.tsx → /settings/profile
  * - /src/pages/blog/[...slug].tsx → /blog/*slug
  * - /src/pages/404.tsx → __404__
+ * - /src/pages/(website)/contact.tsx → /contact
+ * - /src/pages/(portal)/dashboard.tsx → /dashboard
  */
 function pathFromFile(file: string): string {
     // Remove /src/pages prefix and file extension
@@ -32,8 +34,12 @@ function pathFromFile(file: string): string {
         return "__404__";
     }
 
+    // Remove route groups (folders in parentheses)
+    // E.g., /(website)/contact → /contact
+    let pattern = withoutPrefix.replace(/\/\([^)]+\)/g, "");
+
     // Convert /index to /
-    let pattern = withoutPrefix.replace(/\/index$/, "") || "/";
+    pattern = pattern.replace(/\/index$/, "") || "/";
     // Convert [...param] to *param (catch-all)
     pattern = pattern.replace(/\[\.\.\.(.+?)\]/g, "*$1");
     // Convert [param] to :param (single dynamic segment)
@@ -124,6 +130,7 @@ function createMatcher(pattern: string) {
 /**
  * Get directory path from file path
  * /src/pages/tasks/[id].tsx → /tasks
+ * /src/pages/(website)/contact.tsx → /(website)
  */
 function getDirectoryPath(file: string): string {
     const withoutPrefix = file.replace("/src/pages", "").replace(/\.(tsx|jsx|ts|js)$/, "");
@@ -158,6 +165,9 @@ export function buildRoutes(): {
     // Build layout map: directory path -> layout component
     const layoutMap = new Map<string, ComponentType<LayoutProps>>();
 
+    // Track route patterns to detect collisions: pattern -> file path
+    const routePatternMap = new Map<string, string>();
+
     // First pass: collect all layouts
     for (const [file, mod] of Object.entries(pages)) {
         if (file.includes("/_layout.")) {
@@ -190,14 +200,32 @@ export function buildRoutes(): {
             continue;
         }
 
+        // Detect route collisions
+        const existingFile = routePatternMap.get(pathPattern);
+        if (existingFile) {
+            log("error", `Route collision detected! Multiple files resolve to the same path "${pathPattern}":`);
+            log("error", `  - ${existingFile}`);
+            log("error", `  - ${file}`);
+            log("error", `Only the first file will be used. Consider using different file names or paths.`);
+        } else {
+            routePatternMap.set(pathPattern, file);
+        }
+
         // Find all layouts for this route (from root to leaf)
         const layouts: ComponentType<LayoutProps>[] = [];
         const dirPath = getDirectoryPath(file);
         const pathParts = dirPath.split("/").filter(Boolean);
 
-        // Check for layouts at each level
-        for (let i = 0; i <= pathParts.length; i++) {
-            const checkPath = i === 0 ? "/" : "/" + pathParts.slice(0, i).join("/");
+        // Always check for root layout first (applies to all pages)
+        const rootLayout = layoutMap.get("/");
+        if (rootLayout) {
+            layouts.push(rootLayout);
+        }
+
+        // Then check for layouts at each nested level
+        // This will include route group layouts and any nested folder layouts
+        for (let i = 1; i <= pathParts.length; i++) {
+            const checkPath = "/" + pathParts.slice(0, i).join("/");
             const layout = layoutMap.get(checkPath);
             if (layout) {
                 layouts.push(layout);

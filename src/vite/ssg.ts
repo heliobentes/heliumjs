@@ -66,10 +66,16 @@ export function scanSSGPages(root: string): SSGPage[] {
  * pages/index.tsx -> /
  * pages/about.tsx -> /about
  * pages/blog/post.tsx -> /blog/post
+ * pages/(website)/contact.tsx -> /contact
+ * pages/(portal)/dashboard.tsx -> /dashboard
  */
 function filePathToUrlPath(relativePath: string): string {
     // Remove 'pages/' prefix and file extension
     let urlPath = relativePath.replace(/^pages\//, "").replace(/\.(tsx|jsx|ts|js)$/, "");
+
+    // Remove route groups (folders in parentheses)
+    // E.g., (website)/contact -> /contact
+    urlPath = urlPath.replace(/\([^)]+\)\//g, "");
 
     // Handle index files
     if (urlPath.endsWith("/index") || urlPath === "index") {
