@@ -44,7 +44,7 @@ async function createSocket(): Promise<WebSocket> {
     // Fetch a fresh token before creating the WebSocket connection
     const freshToken = await fetchFreshToken();
     const token = freshToken || window.HELIUM_CONNECTION_TOKEN;
-    
+
     // Update current token
     currentToken = token;
 
