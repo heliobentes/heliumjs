@@ -1,12 +1,73 @@
 {
-  "name": "heliumjs-workspace",
-  "private": true,
-  "workspaces": [
-    "helium",
-    "example-app"
-  ],
-  "dependencies": {
-    "cac": "^6.7.14",
-    "esbuild": "^0.27.0"
-  }
+    "name": "helium",
+    "version": "0.0.1",
+    "bin": {
+        "helium": "./dist/bin/helium.js"
+    },
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./client": {
+            "import": "./dist/client/index.js",
+            "require": "./dist/client/index.js",
+            "types": "./dist/client/index.d.ts"
+        },
+        "./server": {
+            "import": "./dist/server/index.js",
+            "require": "./dist/server/index.js",
+            "types": "./dist/server/index.d.ts"
+        },
+        "./prod-server": {
+            "import": "./dist/server/prodServer.js",
+            "require": "./dist/server/prodServer.js",
+            "types": "./dist/server/prodServer.d.ts"
+        },
+        "./vite": {
+            "import": "./dist/vite/index.js",
+            "require": "./dist/vite/index.js",
+            "types": "./dist/vite/index.d.ts"
+        }
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "format": "prettier --write \"src/**/*.{ts,tsx,js}\"",
+        "format:check": "prettier --check \"src/**/*.{ts,tsx,js}\"",
+        "lint": "eslint --ext .ts,.tsx src",
+        "lint:fix": "eslint --ext .ts,.tsx src --fix"
+    },
+    "peerDependencies": {
+        "react": "^18.0.0",
+        "react-dom": "^18.0.0",
+        "vite": "^7.0.0"
+    },
+    "dependencies": {
+        "@msgpack/msgpack": "^3.1.2",
+        "cac": "^6.7.14",
+        "dotenv": "^17.2.3",
+        "esbuild": "^0.27.0",
+        "ws": "^8.18.3"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "@types/react": "^18.0.0",
+        "@types/react-dom": "^18.3.7",
+        "@types/ws": "^8.18.1",
+        "@typescript-eslint/eslint-plugin": "^8.47.0",
+        "@typescript-eslint/parser": "^8.47.0",
+        "eslint": "^9.39.1",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-import": "^2.32.0",
+        "eslint-plugin-prettier": "^5.5.4",
+        "eslint-plugin-simple-import-sort": "^12.1.1",
+        "eslint-plugin-unused-imports": "^4.3.0",
+        "prettier": "^3.6.2",
+        "typescript": "^5.9.3",
+        "vite": "^7.2.4"
+    }
 }
