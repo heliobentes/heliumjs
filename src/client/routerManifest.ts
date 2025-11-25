@@ -158,6 +158,17 @@ export function buildRoutes(): {
         eager: true,
     });
 
+    // Debug mode: set localStorage.setItem('helium_debug_routes', 'true') to enable
+    const debugRoutes = typeof localStorage !== "undefined" && localStorage.getItem("helium_debug_routes") === "true";
+
+    if (debugRoutes) {
+        console.group("[Helium Router] Discovered pages:");
+        for (const file of Object.keys(pages)) {
+            console.log(`  ${file} → ${pathFromFile(file)}`);
+        }
+        console.groupEnd();
+    }
+
     const routes: RouteEntry[] = [];
     let NotFound: ComponentType<any> | undefined;
     let AppShell: ComponentType<any> | undefined;
@@ -267,6 +278,14 @@ export function buildRoutes(): {
         // Longer paths first (more specific)
         return b.pathPattern.length - a.pathPattern.length;
     });
+
+    if (debugRoutes) {
+        console.group("[Helium Router] Final route order:");
+        for (const route of routes) {
+            console.log(`  ${route.pathPattern}`);
+        }
+        console.groupEnd();
+    }
 
     return { routes, NotFound, AppShell };
 }

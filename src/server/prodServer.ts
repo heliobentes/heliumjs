@@ -102,8 +102,9 @@ export function startProdServer(options: ProdServerOptions) {
             const isFileOrExists = fs.existsSync(filePath) && fs.statSync(filePath).isFile();
             if (!isFileOrExists && !url.startsWith("/api") && !url.startsWith("/webhooks") && !url.startsWith("/auth")) {
                 // Fall back to index.html for SPA routing
+                // Note: We don't set is404 here because the client-side router will determine
+                // if the route exists. If it doesn't, the router will render the 404 page.
                 filePath = path.join(staticDir, "index.html");
-                is404 = true;
             }
         }
 
