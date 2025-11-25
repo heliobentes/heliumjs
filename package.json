@@ -1,6 +1,6 @@
 {
     "name": "helium",
-    "version": "0.1.3",
+    "version": "0.2",
     "bin": {
         "helium": "./dist/bin/helium.js"
     },
