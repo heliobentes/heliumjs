@@ -31,6 +31,8 @@ HeliumJS is a blazing fast 🚀 and opinionated full-stack React + Vite framewor
 
 ### 1.1. Installation
 
+An installation script is coming soon! Meanwhile, follow these steps to set up a new HeliumJS project.
+
 #### 1.1.1. Install React + Vite
 
 ```bash
@@ -54,6 +56,14 @@ import { defineConfig } from 'vite';
 export default defineConfig({
     plugins: [react(), helium()]
 });
+```
+
+#### 1.1.4. Delete **main.tsx**
+Delete the `src/main.tsx` file created by Vite, as HeliumJS handles the client entry point automatically.
+Also, remove its reference from `index.html` if present.
+```html
+<!-- Remove this from index.html -->
+<script type="module" src="/src/main.tsx"></script>
 ```
 
 ### 1.2. Running the Development Server
