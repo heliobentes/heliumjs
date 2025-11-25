@@ -66,6 +66,16 @@ Also, remove its reference from `index.html` if present.
 <script type="module" src="/src/main.tsx"></script>
 ```
 
+#### 1.1.5. Update `src/App.tsx`
+Replace the contents of `src/App.tsx` with the following content:
+```tsx
+import { type AppShellProps } from "helium/client";
+
+export default function App({ Component, pageProps }: AppShellProps) {
+    return <Component {...pageProps} />;
+}
+```
+
 ### 1.2. Running the Development Server
 
 ```bash

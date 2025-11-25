@@ -105,6 +105,7 @@ export function startProdServer(options: ProdServerOptions) {
                 // Note: We don't set is404 here because the client-side router will determine
                 // if the route exists. If it doesn't, the router will render the 404 page.
                 filePath = path.join(staticDir, "index.html");
+                is404 = true;
             }
         }
 
