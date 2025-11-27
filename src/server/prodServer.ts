@@ -199,7 +199,7 @@ export function startProdServer(options: ProdServerOptions) {
                   zlibDeflateOptions: {
                       chunkSize: 1024,
                       memLevel: 7,
-                      level: 3, // Lower = faster, higher = better compression (1-9)
+                      level: 6, // Default compression level (balanced)
                   },
                   zlibInflateOptions: {
                       chunkSize: 10 * 1024,
