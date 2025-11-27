@@ -60,7 +60,7 @@ export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHand
                       zlibDeflateOptions: {
                           chunkSize: 1024,
                           memLevel: 7,
-                          level: 6, // Default compression level (balanced)
+                          level: 9, // 6 is default compression level (balanced)
                       },
                       zlibInflateOptions: {
                           chunkSize: 10 * 1024,
