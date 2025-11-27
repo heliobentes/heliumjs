@@ -76,14 +76,54 @@ interface NavigatorWithConnection extends Navigator {
 }
 
 // ============================================================================
-// HTTP Transport
+// Batching Logic
 // ============================================================================
 
-async function rpcCallHttp<TResult, TArgs>(methodId: string, args?: TArgs): Promise<RpcResult<TResult>> {
-    const id = uuid();
-    const req: RpcRequest = { id, method: methodId, args };
+type PendingRequest = {
+    req: RpcRequest;
+    resolve: (value: RpcResult<any>) => void;
+    reject: (reason?: any) => void;
+};
 
-    const encoded = msgpackEncode(req);
+let pendingBatch: PendingRequest[] = [];
+let isBatchScheduled = false;
+
+function scheduleBatch() {
+    if (isBatchScheduled) {
+        return;
+    }
+    isBatchScheduled = true;
+    queueMicrotask(() => {
+        isBatchScheduled = false;
+        flushBatch();
+    });
+}
+
+async function flushBatch() {
+    const batch = pendingBatch;
+    pendingBatch = [];
+
+    if (batch.length === 0) {
+        return;
+    }
+
+    try {
+        if (shouldUseHttpTransport()) {
+            await sendBatchHttp(batch);
+        } else {
+            await sendBatchWebSocket(batch);
+        }
+    } catch (err) {
+        // Transport error, fail all
+        for (const item of batch) {
+            item.reject(err);
+        }
+    }
+}
+
+async function sendBatchHttp(batch: PendingRequest[]) {
+    const requests = batch.map((b) => b.req);
+    const encoded = msgpackEncode(requests);
 
     const response = await fetch("/__helium__/rpc", {
         method: "POST",
@@ -99,12 +139,46 @@ async function rpcCallHttp<TResult, TArgs>(methodId: string, args?: TArgs): Prom
     }
 
     const responseBuffer = await response.arrayBuffer();
-    const msg = msgpackDecode(new Uint8Array(responseBuffer)) as RpcResponse;
+    const msg = msgpackDecode(new Uint8Array(responseBuffer)) as RpcResponse | RpcResponse[];
 
-    if (msg.ok) {
-        return { data: msg.result as TResult, stats: msg.stats };
-    } else {
-        throw { error: msg.error, stats: msg.stats };
+    const responses = Array.isArray(msg) ? msg : [msg];
+    const responseMap = new Map(responses.map((r) => [r.id, r]));
+
+    for (const item of batch) {
+        const res = responseMap.get(item.req.id);
+        if (res) {
+            if (res.ok) {
+                item.resolve({ data: res.result, stats: res.stats });
+            } else {
+                item.reject({ error: res.error, stats: res.stats });
+            }
+        } else {
+            item.reject(new Error("No response for request"));
+        }
+    }
+}
+
+async function sendBatchWebSocket(batch: PendingRequest[]) {
+    const ws = await ensureSocketReady();
+    const requests = batch.map((b) => b.req);
+
+    // Register pending promises
+    batch.forEach((item) => {
+        pending.set(item.req.id, {
+            resolve: (v: unknown) => item.resolve(v as RpcResult<any>),
+            reject: item.reject,
+        });
+    });
+
+    try {
+        // Always use msgpack encoding
+        const encoded = msgpackEncode(requests);
+        ws.send(encoded);
+    } catch (err) {
+        batch.forEach((item) => {
+            pending.delete(item.req.id);
+            item.reject(err);
+        });
     }
 }
 
@@ -115,7 +189,7 @@ async function rpcCallHttp<TResult, TArgs>(methodId: string, args?: TArgs): Prom
 let socket: WebSocket | null = null;
 let connectionPromise: Promise<WebSocket> | null = null;
 
-const pending = new Map<string, { resolve: (v: unknown) => void; reject: (e: unknown) => void }>();
+const pending = new Map<string | number, { resolve: (v: unknown) => void; reject: (e: unknown) => void }>();
 
 // Clean up WebSocket connection on HMR (Hot Module Replacement)
 if (import.meta.hot) {
@@ -134,8 +208,9 @@ if (import.meta.hot) {
     });
 }
 
-function uuid() {
-    return Math.random().toString(36).slice(2);
+let msgId = 0;
+function nextId() {
+    return msgId++;
 }
 
 async function fetchFreshToken(): Promise<string | undefined> {
@@ -165,28 +240,26 @@ async function createSocket(): Promise<WebSocket> {
     ws.binaryType = "arraybuffer";
 
     ws.onmessage = (event) => {
-        let msg: RpcResponse;
+        // Always expect binary MessagePack
+        const msg = msgpackDecode(new Uint8Array(event.data as ArrayBuffer)) as RpcResponse | RpcResponse[];
 
-        // Handle both binary (MessagePack) and text (JSON) messages.
-        if (event.data instanceof ArrayBuffer) {
-            msg = msgpackDecode(new Uint8Array(event.data)) as RpcResponse;
-        } else {
-            try {
-                msg = JSON.parse(event.data);
-            } catch {
-                msg = msgpackDecode(new Uint8Array(event.data)) as RpcResponse;
+        const handleResponse = (res: RpcResponse) => {
+            const entry = pending.get(res.id);
+            if (!entry) {
+                return;
             }
-        }
+            pending.delete(res.id);
+            if (res.ok) {
+                entry.resolve({ data: res.result, stats: res.stats });
+            } else {
+                entry.reject({ error: res.error, stats: res.stats });
+            }
+        };
 
-        const entry = pending.get(msg.id);
-        if (!entry) {
-            return;
-        }
-        pending.delete(msg.id);
-        if (msg.ok) {
-            entry.resolve({ data: msg.result, stats: msg.stats });
+        if (Array.isArray(msg)) {
+            msg.forEach(handleResponse);
         } else {
-            entry.reject({ error: msg.error, stats: msg.stats });
+            handleResponse(msg);
         }
     };
 
@@ -280,12 +353,28 @@ async function ensureSocketReady(): Promise<WebSocket> {
     return connectionPromise;
 }
 
-/**
- * WebSocket-based RPC call (original implementation).
- */
 async function rpcCallWebSocket<TResult, TArgs>(methodId: string, args?: TArgs): Promise<RpcResult<TResult>> {
+    // Optimization: If socket is open, send immediately without awaiting ensureSocketReady (which adds a microtask tick)
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        const id = nextId();
+        const req: RpcRequest = { id, method: methodId, args };
+        return new Promise<RpcResult<TResult>>((resolve, reject) => {
+            pending.set(id, {
+                resolve: (v: unknown) => resolve(v as RpcResult<TResult>),
+                reject,
+            });
+            try {
+                const encoded = msgpackEncode(req);
+                socket!.send(encoded);
+            } catch (err) {
+                pending.delete(id);
+                reject(err);
+            }
+        });
+    }
+
     const ws = await ensureSocketReady();
-    const id = uuid();
+    const id = nextId();
 
     const req: RpcRequest = { id, method: methodId, args };
 
@@ -311,8 +400,15 @@ async function rpcCallWebSocket<TResult, TArgs>(methodId: string, args?: TArgs):
  */
 export async function rpcCall<TResult = unknown, TArgs = unknown>(methodId: string, args?: TArgs): Promise<RpcResult<TResult>> {
     if (shouldUseHttpTransport()) {
-        return rpcCallHttp<TResult, TArgs>(methodId, args);
+        const id = nextId();
+        const req: RpcRequest = { id, method: methodId, args };
+
+        return new Promise<RpcResult<TResult>>((resolve, reject) => {
+            pendingBatch.push({ req, resolve: resolve as any, reject });
+            scheduleBatch();
+        });
     }
+
     return rpcCallWebSocket<TResult, TArgs>(methodId, args);
 }
 

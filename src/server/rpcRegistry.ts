@@ -14,8 +14,7 @@ interface SocketMetadata {
 }
 
 export interface HttpRpcResult {
-    response: RpcResponse;
-    encoding: "json" | "msgpack";
+    response: RpcResponse | RpcResponse[];
 }
 
 export class RpcRegistry {
@@ -23,15 +22,10 @@ export class RpcRegistry {
     private middleware: HeliumMiddleware | null = null;
     private rateLimiter: RateLimiter | null = null;
     private socketMetadata = new WeakMap<WebSocket, SocketMetadata>();
-    private rpcEncoding: "json" | "msgpack" = "msgpack";
 
     register(id: string, def: HeliumMethodDef<any, any>) {
         def.__id = id;
         this.methods.set(id, def);
-    }
-
-    setRpcEncoding(encoding: "json" | "msgpack") {
-        this.rpcEncoding = encoding;
     }
 
     setMiddleware(middleware: HeliumMiddleware) {
@@ -69,33 +63,15 @@ export class RpcRegistry {
         };
     }
 
-    async handleMessage(socket: WebSocket, raw: string | Buffer) {
-        let req: RpcRequest;
-        try {
-            // Handle both binary (MessagePack) and text (JSON) messages
-            if (Buffer.isBuffer(raw)) {
-                req = msgpackDecode(raw) as RpcRequest;
-            } else {
-                req = JSON.parse(raw);
-            }
-        } catch {
-            return;
-        }
-
+    private async processRequest(req: RpcRequest, socket: WebSocket): Promise<RpcResponse> {
         const def = this.methods.get(req.method);
         if (!def) {
-            const res: RpcResponse = {
+            return {
                 id: req.id,
                 ok: false,
                 stats: this.getStats(socket),
                 error: `Unknown method ${req.method}`,
             };
-            if (this.rpcEncoding === "msgpack") {
-                socket.send(msgpackEncode(res) as Buffer);
-            } else {
-                socket.send(JSON.stringify(res));
-            }
-            return;
         }
 
         try {
@@ -129,92 +105,63 @@ export class RpcRegistry {
 
                 // If next() was not called, the middleware blocked the request
                 if (!nextCalled) {
-                    const res: RpcResponse = {
+                    return {
                         id: req.id,
                         ok: false,
                         stats: this.getStats(socket),
                         error: "Request blocked by middleware",
                     };
-                    if (this.rpcEncoding === "msgpack") {
-                        socket.send(msgpackEncode(res) as Buffer);
-                    } else {
-                        socket.send(JSON.stringify(res));
-                    }
-                    return;
                 }
             } else {
                 // No middleware, execute handler directly
                 result = await def.handler(req.args, ctx);
             }
 
-            const res: RpcResponse = {
+            return {
                 id: req.id,
                 ok: true,
                 stats: this.getStats(socket),
                 result,
             };
-            if (this.rpcEncoding === "msgpack") {
-                socket.send(msgpackEncode(res) as Buffer);
-            } else {
-                socket.send(JSON.stringify(res));
-            }
         } catch (err: any) {
-            const res: RpcResponse = {
+            return {
                 id: req.id,
                 ok: false,
                 stats: this.getStats(socket),
                 error: err?.message ?? "Server error",
             };
-            if (this.rpcEncoding === "msgpack") {
-                socket.send(msgpackEncode(res) as Buffer);
-            } else {
-                socket.send(JSON.stringify(res));
-            }
         }
     }
 
-    /**
-     * Handle an HTTP-based RPC request.
-     * This is an alternative to WebSocket for environments where HTTP performs better
-     * (e.g., mobile networks with high latency where HTTP/2 multiplexing helps).
-     */
-    async handleHttpRequest(reqBody: Buffer | string, ip: string, httpReq: http.IncomingMessage): Promise<HttpRpcResult> {
-        let req: RpcRequest;
-        let useMsgpack = false;
-
+    async handleMessage(socket: WebSocket, raw: string | Buffer) {
+        let req: RpcRequest | RpcRequest[];
         try {
-            // Check content type to determine encoding
-            const contentType = httpReq.headers["content-type"] || "";
-            if (contentType.includes("application/msgpack")) {
-                const buffer = Buffer.isBuffer(reqBody) ? reqBody : Buffer.from(reqBody);
-                req = msgpackDecode(buffer) as RpcRequest;
-                useMsgpack = true;
-            } else {
-                const str = Buffer.isBuffer(reqBody) ? reqBody.toString() : reqBody;
-                req = JSON.parse(str);
-            }
+            // Always expect MessagePack
+            const buffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw);
+            req = msgpackDecode(buffer) as RpcRequest | RpcRequest[];
         } catch {
-            const errorResponse: RpcResponse = {
-                id: "unknown",
-                ok: false,
-                stats: { remainingRequests: 0, resetInSeconds: 0 },
-                error: "Invalid request format",
-            };
-            return {
-                response: errorResponse,
-                encoding: useMsgpack ? "msgpack" : "json",
-            };
+            return;
         }
 
+        let response: RpcResponse | RpcResponse[];
+        if (Array.isArray(req)) {
+            response = await Promise.all(req.map((r) => this.processRequest(r, socket)));
+        } else {
+            response = await this.processRequest(req, socket);
+        }
+
+        socket.send(msgpackEncode(response) as Buffer);
+    }
+
+    private async processRequestHttp(req: RpcRequest, ip: string, httpReq: http.IncomingMessage): Promise<RpcResponse> {
         const def = this.methods.get(req.method);
         if (!def) {
-            const res: RpcResponse = {
+            return {
                 id: req.id,
                 ok: false,
                 stats: { remainingRequests: Infinity, resetInSeconds: 0 },
                 error: `Unknown method ${req.method}`,
             };
-            return { response: res, encoding: useMsgpack ? "msgpack" : "json" };
         }
 
         try {
@@ -246,34 +193,65 @@ export class RpcRegistry {
                 );
 
                 if (!nextCalled) {
-                    const res: RpcResponse = {
+                    return {
                         id: req.id,
                         ok: false,
                         stats: { remainingRequests: Infinity, resetInSeconds: 0 },
                         error: "Request blocked by middleware",
                     };
-                    return { response: res, encoding: useMsgpack ? "msgpack" : "json" };
                 }
             } else {
                 result = await def.handler(req.args, ctx);
             }
 
-            const res: RpcResponse = {
+            return {
                 id: req.id,
                 ok: true,
                 stats: { remainingRequests: Infinity, resetInSeconds: 0 },
                 result,
             };
-            return { response: res, encoding: useMsgpack ? "msgpack" : "json" };
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Server error";
-            const res: RpcResponse = {
+            return {
                 id: req.id,
                 ok: false,
                 stats: { remainingRequests: Infinity, resetInSeconds: 0 },
                 error: errorMessage,
             };
-            return { response: res, encoding: useMsgpack ? "msgpack" : "json" };
         }
+    }
+
+    /**
+     * Handle an HTTP-based RPC request.
+     * This is an alternative to WebSocket for environments where HTTP performs better
+     * (e.g., mobile networks with high latency where HTTP/2 multiplexing helps).
+     */
+    async handleHttpRequest(reqBody: Buffer | string, ip: string, httpReq: http.IncomingMessage): Promise<HttpRpcResult> {
+        let req: RpcRequest | RpcRequest[];
+
+        try {
+            // Always expect MessagePack
+            const buffer = Buffer.isBuffer(reqBody) ? reqBody : Buffer.from(reqBody);
+            req = msgpackDecode(buffer) as RpcRequest | RpcRequest[];
+        } catch {
+            const errorResponse: RpcResponse = {
+                id: "unknown",
+                ok: false,
+                stats: { remainingRequests: 0, resetInSeconds: 0 },
+                error: "Invalid request format",
+            };
+            return {
+                response: errorResponse,
+            };
+        }
+
+        let response: RpcResponse | RpcResponse[];
+        if (Array.isArray(req)) {
+            response = await Promise.all(req.map((r) => this.processRequestHttp(r, ip, httpReq)));
+        } else {
+            response = await this.processRequestHttp(req as RpcRequest, ip, httpReq);
+        }
+
+        return { response };
     }
 }

@@ -49,7 +49,6 @@ export function startProdServer(options: ProdServerOptions) {
     const rateLimiter = new RateLimiter(rpcSecurity.maxMessagesPerWindow, rpcSecurity.rateLimitWindowMs, rpcSecurity.maxConnectionsPerIP);
 
     const registry = new RpcRegistry();
-    registry.setRpcEncoding(rpcConfig.encoding);
     const httpRouter = new HTTPRouter();
     httpRouter.setTrustProxyDepth(trustProxyDepth);
     registerHandlers(registry, httpRouter);
@@ -75,12 +74,11 @@ export function startProdServer(options: ProdServerOptions) {
                     const ip = extractClientIP(req, trustProxyDepth);
                     const result = await registry.handleHttpRequest(body, ip, req);
 
-                    const contentType = result.encoding === "msgpack" ? "application/msgpack" : "application/json";
-                    const encoded = result.encoding === "msgpack" ? msgpackEncode(result.response) : null;
-                    const responseBody = encoded ? Buffer.from(encoded as Uint8Array) : JSON.stringify(result.response);
+                    const encoded = msgpackEncode(result.response);
+                    const responseBody = Buffer.from(encoded as Uint8Array);
 
                     res.writeHead(200, {
-                        "Content-Type": contentType,
+                        "Content-Type": "application/msgpack",
                         "Cache-Control": "no-store",
                     });
                     res.end(responseBody);
@@ -223,38 +221,40 @@ export function startProdServer(options: ProdServerOptions) {
             return;
         }
 
-        socket.on("message", (msg: WebSocket.RawData) => {
+        socket.on("message", (msg: WebSocket.RawData, isBinary: boolean) => {
             // Check rate limit
             if (!rateLimiter.checkRateLimit(socket)) {
                 // Parse request to get the ID for proper error response
                 try {
                     let req: any;
-                    if (Buffer.isBuffer(msg)) {
-                        const { decode: msgpackDecode } = require("@msgpack/msgpack");
-                        req = msgpackDecode(msg);
-                    } else {
-                        req = JSON.parse(msg.toString());
-                    }
+                    // Always expect MessagePack
+                    const buffer = Buffer.isBuffer(msg) ? msg : Buffer.from(msg as any);
+                    const { decode: msgpackDecode } = require("@msgpack/msgpack");
+                    req = msgpackDecode(buffer);
 
                     const stats = rateLimiter.getConnectionStats(socket);
                     const now = Date.now();
                     const resetInSeconds = stats ? Math.ceil((stats.resetTimeMs - now) / 1000) : 0;
 
-                    const errorResponse = {
-                        id: req.id,
+                    const createError = (id: string) => ({
+                        id,
                         ok: false,
                         stats: {
                             remainingRequests: stats ? stats.remainingMessages : 0,
                             resetInSeconds,
                         },
                         error: "Rate limit exceeded",
-                    };
-                    log("warn", `Rate limit exceeded for IP ${ip}, resets in ${resetInSeconds} seconds`);
-                    if (rpcConfig.encoding === "msgpack") {
-                        socket.send(msgpackEncode(errorResponse) as Buffer);
+                    });
+
+                    let errorResponse: any;
+                    if (Array.isArray(req)) {
+                        errorResponse = req.map((r: any) => createError(r.id));
                     } else {
-                        socket.send(JSON.stringify(errorResponse));
+                        errorResponse = createError(req.id);
                     }
+
+                    log("warn", `Rate limit exceeded for IP ${ip}, resets in ${resetInSeconds} seconds`);
+                    socket.send(msgpackEncode(errorResponse) as Buffer);
                 } catch {
                     // If we can't parse the request, just close the connection
                     socket.close();
@@ -262,7 +262,7 @@ export function startProdServer(options: ProdServerOptions) {
                 return;
             }
 
-            registry.handleMessage(socket, Buffer.isBuffer(msg) ? msg : msg.toString());
+            registry.handleMessage(socket, Buffer.isBuffer(msg) ? msg : Buffer.from(msg as any));
         });
     });
 

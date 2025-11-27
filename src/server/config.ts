@@ -111,35 +111,10 @@ export interface HeliumConfig {
     /**
      * RPC transport configuration.
      *
-     * Configure the WebSocket-based RPC layer including message encoding,
-     * compression, and security settings.
+     * Configure the WebSocket-based RPC layer including compression
+     * and security settings.
      */
     rpc?: {
-        /**
-         * Message encoding format for RPC communication.
-         *
-         * Choose how messages are serialized over the WebSocket connection:
-         *
-         * - `"msgpack"` (default): Binary MessagePack encoding
-         *   - ✅ Smaller payload size (~30-50% smaller than JSON)
-         *   - ✅ Faster serialization/deserialization
-         *   - ✅ Better performance for large data structures
-         *   - ⚠️ Not human-readable in browser DevTools
-         *
-         * - `"json"`: Standard JSON text encoding
-         *   - ✅ Human-readable in browser network inspector
-         *   - ✅ Easier debugging and development
-         *   - ✅ No special dependencies required
-         *   - ⚠️ Larger payload size
-         *   - ⚠️ Slower for complex data structures
-         *
-         * **Note:** The server accepts both formats simultaneously, so you can
-         * switch between them without breaking existing clients.
-         *
-         * @default "msgpack"
-         */
-        encoding?: "json" | "msgpack";
-
         /**
          * Client-side transport mode for RPC calls.
          *
@@ -298,13 +273,12 @@ export function getCompressionConfig(config: HeliumConfig = {}): Required<Helium
 }
 
 /**
- * Get complete RPC configuration including encoding, compression, and security.
+ * Get complete RPC configuration including compression, and security.
  *
  * @internal - Used by framework internals only
  */
 export function getRpcConfig(config: HeliumConfig = {}) {
     return {
-        encoding: (config.rpc?.encoding ?? "msgpack") as "json" | "msgpack",
         compression: getCompressionConfig(config),
         security: getRpcSecurityConfig(config),
     };

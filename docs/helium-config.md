@@ -71,35 +71,6 @@ const config: HeliumConfig = {
 };
 ```
 
-#### Message Encoding
-
-Choose how messages are serialized over the WebSocket connection:
-
-```typescript
-const config: HeliumConfig = {
-    rpc: {
-        encoding: "msgpack", // or "json"
-    },
-};
-```
-
-**Options:**
-
-- **`"msgpack"`** (default): Binary MessagePack encoding
-  - ✅ Smaller payload size (~30-50% smaller than JSON)
-  - ✅ Faster serialization/deserialization
-  - ✅ Better performance for large data structures
-  - ⚠️ Not human-readable in browser DevTools
-
-- **`"json"`**: Standard JSON text encoding
-  - ✅ Human-readable in browser network inspector
-  - ✅ Easier debugging and development
-  - ✅ No special dependencies required
-  - ⚠️ Larger payload size
-  - ⚠️ Slower for complex data structures
-
-**Note:** The server accepts both formats simultaneously, so you can switch between them without breaking existing clients.
-
 #### Compression
 
 Configure WebSocket per-message compression (permessage-deflate extension):
@@ -234,9 +205,6 @@ const config: HeliumConfig = {
         transport: "websocket",    // Default: WebSocket for lowest latency
         autoHttpOnMobile: false,   // Set to true to optimize for mobile networks
 
-        // Use MessagePack for better performance
-        encoding: "msgpack",
-
         // Enable compression for messages over 1KB
         compression: {
             enabled: true,
@@ -270,8 +238,6 @@ const config: HeliumConfig = {
     trustProxyDepth: isProduction ? 1 : 0,
 
     rpc: {
-        encoding: isDevelopment ? "json" : "msgpack",
-
         compression: {
             enabled: isProduction,
             threshold: 1024,
@@ -317,7 +283,6 @@ Then update the syntax to JavaScript:
 export default {
     trustProxyDepth: 1,
     rpc: {
-        encoding: "msgpack",
         compression: {
             enabled: true,
             threshold: 1024,
@@ -355,7 +320,6 @@ If you don't provide a configuration file, Helium uses these defaults:
 {
     trustProxyDepth: 0,
     rpc: {
-        encoding: "msgpack",
         compression: {
             enabled: true,
             threshold: 1024,
@@ -416,9 +380,8 @@ See [Proxy Configuration](./proxy-configuration.md) for detailed IP detection tr
 3. **Start with defaults**: Only configure what you need to change from the defaults
 4. **Monitor rate limits**: Adjust `maxMessagesPerWindow` based on your application's needs
 5. **Test proxy configuration**: Use the Context API to verify IP detection is working correctly
-6. **Use MessagePack in production**: Better performance and smaller payloads than JSON
-7. **Enable compression**: Reduces bandwidth usage for large messages
-8. **Set appropriate token validity**: Balance security (shorter) vs. network reliability (longer)
+6. **Enable compression**: Reduces bandwidth usage for large messages
+7. **Set appropriate token validity**: Balance security (shorter) vs. network reliability (longer)
 
 ## Related Documentation
 

@@ -82,11 +82,10 @@ If you prefer to use `.js` config files in production without transpilation:
     export default {
         trustProxyDepth: 1,
         rpc: {
-            encoding: "msgpack",
-            compression: {
-                enabled: true,
-                threshold: 1024,
-            },
+        compression: {
+            enabled: true,
+            threshold: 1024,
+        },
             security: {
                 maxConnectionsPerIP: 10,
                 maxMessagesPerWindow: 100,
