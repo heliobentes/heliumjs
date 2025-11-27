@@ -6,12 +6,20 @@
  * It preserves MessagePack-supported types like Date and Uint8Array (Buffer).
  */
 export function prepareForMsgpack(value: any): any {
-    if (value === null || value === undefined) return value;
-    if (typeof value !== "object") return value;
+    if (value === null || value === undefined) {
+        return value;
+    }
+    if (typeof value !== "object") {
+        return value;
+    }
 
     // Preserve MessagePack supported types
-    if (value instanceof Date) return value;
-    if (value instanceof Uint8Array) return value;
+    if (value instanceof Date) {
+        return value;
+    }
+    if (value instanceof Uint8Array) {
+        return value;
+    }
 
     // Handle toJSON (e.g. Mongoose documents, custom classes)
     if (typeof value.toJSON === "function") {
