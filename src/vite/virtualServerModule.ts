@@ -36,21 +36,21 @@ export function generateClientModule(methods: MethodExport[]): string {
 
 export function generateTypeDefinitions(methods: MethodExport[], root: string): string {
     const imports = methods
-        .map((m, i) => {
+        .map((m) => {
             let relPath = path.relative(path.join(root, "src"), m.filePath);
             if (!relPath.startsWith(".")) {
                 relPath = "../" + relPath;
             }
             relPath = relPath.replace(/\.ts$/, "");
-            return `import type { ${m.name} as method_${i}_type } from '${relPath}';`;
+            return `import type { ${m.name} as ${m.name}_def } from '${relPath}';`;
         })
         .join("\n");
 
     const exports = methods
-        .map((m, i) => {
+        .map((m) => {
             return `export const ${m.name}: import('helium/client').MethodStub<
-    Parameters<typeof method_${i}_type['handler']>[0],
-    Awaited<ReturnType<typeof method_${i}_type['handler']>>
+    Parameters<typeof ${m.name}_def['handler']>[0],
+    Awaited<ReturnType<typeof ${m.name}_def['handler']>>
 >;`;
         })
         .join("\n");
