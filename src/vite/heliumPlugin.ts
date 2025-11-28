@@ -85,6 +85,9 @@ export default function helium(): Plugin {
                 appType: "spa",
                 optimizeDeps: {
                     include: ["react-dom/client"],
+                    // Exclude helium from pre-bundling since it's the framework itself
+                    // This ensures changes to helium are picked up immediately
+                    exclude: ["helium", "helium/client", "helium/server", "helium/vite"],
                 },
                 define: {
                     ...envDefines,

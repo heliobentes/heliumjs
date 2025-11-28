@@ -206,6 +206,7 @@ export default function Nav() {
 
 - `href` (string): Target URL
 - `replace` (boolean): Use `history.replace` instead of `history.push`
+- `prefetch` (boolean, default: `true`): Prefetch page on hover for faster navigation
 - Standard `<a>` tag props (className, onClick, etc.)
 
 **Behavior:**
@@ -213,6 +214,19 @@ export default function Nav() {
 - Left-clicks are intercepted for SPA navigation
 - Modifier keys (Ctrl, Cmd, Shift, Alt) preserve normal link behavior (open in new tab, etc.)
 - Right-clicks and middle-clicks work normally
+- **Automatic prefetching**: When users hover over or focus on a link, the page chunk is preloaded in the background for instant navigation
+
+**Prefetching:**
+
+Links automatically prefetch page chunks on hover and focus (keyboard navigation). This means when a user clicks a link, the page is often already loaded:
+
+```tsx
+// Prefetching enabled by default
+<Link href="/heavy-page">Heavy Page</Link>
+
+// Disable prefetching for specific links
+<Link href="/settings" prefetch={false}>Settings</Link>
+```
 
 ### Programmatic Navigation
 
@@ -322,6 +336,20 @@ const router = useRouter();
 return (
     <div>
         {router.isNavigating && <LoadingSpinner />}
+        <main>{/* page content */}</main>
+    </div>
+);
+```
+
+#### `isPending` (boolean)
+
+Indicates when content is stale (React 18+ concurrent feature). This is true when React is rendering a new page in the background while still showing the old content:
+
+```tsx
+const router = useRouter();
+
+return (
+    <div style={{ opacity: router.isPending ? 0.7 : 1 }}>
         <main>{/* page content */}</main>
     </div>
 );
@@ -439,6 +467,95 @@ useEffect(() => {
     preventDefault?: () => void;  // Only for "before-navigation"
 }
 ```
+
+## Smooth Navigation Transitions
+
+Helium provides built-in support for smooth page transitions using React 18+ concurrent features. This prevents UI freezing when navigating to heavy pages.
+
+### useDeferredNavigation Hook
+
+The `useDeferredNavigation` hook integrates `useDeferredValue` and `useTransition` with the router for smoother navigation:
+
+```tsx
+import { useDeferredNavigation } from "helium/client";
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+    const { isStale, isPending, isTransitioning } = useDeferredNavigation();
+
+    return (
+        <div style={{ opacity: isTransitioning ? 0.7 : 1, transition: 'opacity 150ms' }}>
+            {children}
+        </div>
+    );
+}
+```
+
+**Returned values:**
+
+- `path` (string): Current path being navigated to
+- `deferredPath` (string): Deferred path (may lag behind during transitions)
+- `isStale` (boolean): True when showing old content while new page renders
+- `isPending` (boolean): True when a navigation transition is in progress
+- `isTransitioning` (boolean): True when either navigating or showing stale content
+
+### PageTransition Component
+
+The `PageTransition` component handles all navigation transition complexity with a simple API:
+
+```tsx
+import { PageTransition } from "helium/client";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <div>
+            <Header />
+            <PageTransition
+                loadingClassName="opacity-50 transition-opacity"
+                fallback={<LoadingSpinner />}
+            >
+                {children}
+            </PageTransition>
+            <Footer />
+        </div>
+    );
+}
+```
+
+**Props:**
+
+- `children` (ReactNode): Content to wrap
+- `loadingClassName` (string, optional): CSS class applied during transitions
+- `loadingStyle` (CSSProperties, optional): Inline styles applied during transitions
+- `fallback` (ReactNode, optional): Suspense fallback for lazy-loaded pages
+
+**With inline styles:**
+
+```tsx
+<PageTransition
+    loadingStyle={{ opacity: 0.6, transition: 'opacity 150ms ease' }}
+>
+    {children}
+</PageTransition>
+```
+
+**With Tailwind CSS:**
+
+```tsx
+<PageTransition
+    loadingClassName="opacity-60 transition-opacity duration-150"
+    fallback={<div className="animate-pulse">Loading...</div>}
+>
+    {children}
+</PageTransition>
+```
+
+### How It Works
+
+1. **Lazy Loading**: Pages are automatically code-split and lazy-loaded
+2. **Prefetching**: Link components prefetch pages on hover/focus
+3. **Deferred Rendering**: React renders new pages in the background
+4. **Visual Feedback**: Old content fades while new content loads
+5. **No Blocking**: UI remains responsive during heavy page renders
 
 ### Router Events
 

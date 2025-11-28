@@ -1,4 +1,5 @@
-import type { ComponentType } from "react";
+import type { ComponentType, LazyExoticComponent } from "react";
+import React from "react";
 
 import { log } from "../utils/logger.js";
 
@@ -9,8 +10,10 @@ export type LayoutProps = {
 export type RouteEntry = {
     pathPattern: string; // "/tasks/:id"
     matcher: (path: string) => { params: Record<string, string | string[]> } | null;
-    Component: ComponentType<any>;
+    Component: ComponentType<unknown>;
+    LazyComponent: LazyExoticComponent<ComponentType<unknown>>;
     layouts: ComponentType<LayoutProps>[]; // Array of layouts from root to leaf
+    preload: () => Promise<{ default: ComponentType<unknown> }>; // Preload function for prefetching
 };
 
 /**
@@ -142,36 +145,40 @@ function getDirectoryPath(file: string): string {
 /**
  * Build route manifest from pages directory
  * Uses import.meta.glob to discover all page files
+ * Supports both eager and lazy loading for Suspense compatibility
  */
 export function buildRoutes(): {
     routes: RouteEntry[];
-    NotFound?: ComponentType<any>;
-    AppShell?: ComponentType<any>;
+    NotFound?: ComponentType<unknown>;
+    AppShell?: ComponentType<unknown>;
 } {
     // SSR check - return empty routes if running server-side
     if (typeof window === "undefined") {
         return { routes: [], NotFound: undefined, AppShell: undefined };
     }
 
-    // Eagerly load all page components
-    const pages = import.meta.glob("/src/pages/**/*.{tsx,jsx,ts,js}", {
+    // Eagerly load all page components (for initial render and layouts)
+    const eagerPages = import.meta.glob("/src/pages/**/*.{tsx,jsx,ts,js}", {
         eager: true,
-    });
+    }) as Record<string, { default: ComponentType<unknown> }>;
+
+    // Lazy load all page components (for Suspense support)
+    const lazyPages = import.meta.glob("/src/pages/**/*.{tsx,jsx,ts,js}") as Record<string, () => Promise<{ default: ComponentType<unknown> }>>;
 
     // Debug mode: set localStorage.setItem('helium_debug_routes', 'true') to enable
     const debugRoutes = typeof localStorage !== "undefined" && localStorage.getItem("helium_debug_routes") === "true";
 
     if (debugRoutes) {
         console.group("[Helium Router] Discovered pages:");
-        for (const file of Object.keys(pages)) {
+        for (const file of Object.keys(eagerPages)) {
             console.log(`  ${file} → ${pathFromFile(file)}`);
         }
         console.groupEnd();
     }
 
     const routes: RouteEntry[] = [];
-    let NotFound: ComponentType<any> | undefined;
-    let AppShell: ComponentType<any> | undefined;
+    let NotFound: ComponentType<unknown> | undefined;
+    let AppShell: ComponentType<unknown> | undefined;
 
     // Build layout map: directory path -> layout component
     const layoutMap = new Map<string, ComponentType<LayoutProps>>();
@@ -180,24 +187,24 @@ export function buildRoutes(): {
     const routePatternMap = new Map<string, string>();
 
     // First pass: collect all layouts
-    for (const [file, mod] of Object.entries(pages)) {
+    for (const [file, mod] of Object.entries(eagerPages)) {
         if (file.includes("/_layout.")) {
-            const Component = (mod as any).default;
+            const Component = mod.default;
             if (Component) {
                 const dirPath = getDirectoryPath(file);
-                layoutMap.set(dirPath, Component);
+                layoutMap.set(dirPath, Component as ComponentType<LayoutProps>);
             }
         }
     }
 
     // Second pass: build routes with their layouts
-    for (const [file, mod] of Object.entries(pages)) {
+    for (const [file, mod] of Object.entries(eagerPages)) {
         // Skip layout files
         if (file.includes("/_layout.")) {
             continue;
         }
 
-        const Component = (mod as any).default;
+        const Component = mod.default;
         if (!Component) {
             log("warn", `No default export found in ${file}`);
             continue;
@@ -243,12 +250,18 @@ export function buildRoutes(): {
             }
         }
 
-        // Create route entry
+        // Get the lazy loader for this page
+        const lazyLoader = lazyPages[file];
+        const LazyComponent = React.lazy(lazyLoader);
+
+        // Create route entry with both eager and lazy components
         routes.push({
             pathPattern,
             matcher: createMatcher(pathPattern),
             Component,
+            LazyComponent,
             layouts,
+            preload: lazyLoader,
         });
     }
 

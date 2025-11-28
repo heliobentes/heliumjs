@@ -387,6 +387,8 @@ export const RouterContext = React.createContext({
     replace: () => {},
     on: () => () => {},
     status: 200,
+    isNavigating: false,
+    isPending: false,
 });
 
 // Mock useRouter hook
@@ -402,9 +404,22 @@ export function useRouter() {
             replace: () => {},
             on: () => () => {},
             status: 200,
+            isNavigating: false,
+            isPending: false,
         };
     }
     return ctx;
+}
+
+// Mock useDeferredNavigation hook
+export function useDeferredNavigation() {
+    return {
+        path: '/',
+        deferredPath: '/',
+        isStale: false,
+        isPending: false,
+        isTransitioning: false,
+    };
 }
 
 // Mock AppRouter component (alias for Router)
@@ -418,8 +433,18 @@ export function Router({ children }) {
 }
 
 // Mock Link component
-export function Link({ href, children, ...props }) {
+export function Link({ href, children, prefetch, ...props }) {
     return React.createElement('a', { href, ...props }, children);
+}
+
+// Mock PageTransition component
+export function PageTransition({ children, loadingClassName, loadingStyle, fallback }) {
+    return React.createElement('div', null, children);
+}
+
+// Mock Redirect component
+export function Redirect({ to, replace }) {
+    return null;
 }
 
 // Mock useCall hook

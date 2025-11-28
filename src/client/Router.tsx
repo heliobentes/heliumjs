@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import React, { useMemo, useSyncExternalStore } from "react";
+import React, { useDeferredValue, useMemo, useSyncExternalStore, useTransition } from "react";
 
 import type { RouteEntry } from "./routerManifest.js";
 import { buildRoutes } from "./routerManifest.js";
@@ -134,9 +134,40 @@ type RouterContext = {
     on: (event: RouterEvent, listener: EventListener) => () => void;
     status: 200 | 404;
     isNavigating: boolean;
+    /** Indicates content is stale (old content shown while new content renders) - React 18+ concurrent feature */
+    isPending: boolean;
 };
 
 export const RouterContext = React.createContext<RouterContext | null>(null);
+
+// Prefetch cache to avoid duplicate preloads
+const prefetchedRoutes = new Set<string>();
+
+/**
+ * Prefetch a route's page component.
+ * Called on Link hover to preload page chunks before navigation.
+ */
+function prefetchRoute(href: string, routes: RouteEntry[]) {
+    const pathname = href.split("?")[0];
+
+    // Skip if already prefetched
+    if (prefetchedRoutes.has(pathname)) {
+        return;
+    }
+
+    // Find matching route
+    for (const route of routes) {
+        if (route.matcher(pathname)) {
+            prefetchedRoutes.add(pathname);
+            // Trigger the preload
+            route.preload().catch(() => {
+                // Remove from cache if preload fails so it can be retried
+                prefetchedRoutes.delete(pathname);
+            });
+            break;
+        }
+    }
+}
 
 /**
  * Access router context inside a component tree managed by <AppRouter />.
@@ -144,6 +175,7 @@ export const RouterContext = React.createContext<RouterContext | null>(null);
  * Provides current path, route params, URL search params and navigation helpers
  * (\`push\`, \`replace\`) as well as an \`on\` method to subscribe to navigation events.
  * The \`isNavigating\` property indicates when a navigation is in progress.
+ * The \`isPending\` property indicates when content is stale (React concurrent features).
  * Throws when used outside of an <AppRouter /> provider.
  */
 export function useRouter() {
@@ -168,11 +200,57 @@ export function useRouter() {
                 on: () => () => {},
                 status: 200 as const,
                 isNavigating: false,
+                isPending: false,
             };
         }
         throw new Error("useRouter must be used inside <AppRouter>");
     }
     return ctx;
+}
+
+/**
+ * Hook for smooth navigation transitions using React 18+ concurrent features.
+ *
+ * Integrates `useDeferredValue` and `useTransition` with the router for
+ * smoother navigation to heavy pages. When navigating, the old content
+ * remains visible (at reduced opacity via `isStale`) while the new page
+ * renders in the background.
+ *
+ * @example
+ * ```tsx
+ * function Layout({ children }: { children: React.ReactNode }) {
+ *   const { isStale, isPending } = useDeferredNavigation();
+ *
+ *   return (
+ *     <div style={{ opacity: isStale || isPending ? 0.7 : 1 }}>
+ *       {children}
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export function useDeferredNavigation() {
+    const router = useRouter();
+
+    // useDeferredValue marks the path as "deferrable" - React can show stale
+    // content while new content renders in the background
+    const deferredPath = useDeferredValue(router.path);
+
+    // isStale is true when showing old content while new content renders
+    const isStale = deferredPath !== router.path;
+
+    return {
+        /** Current path being navigated to */
+        path: router.path,
+        /** Deferred path (may lag behind during transitions) */
+        deferredPath,
+        /** True when showing stale content (old page while new page renders) */
+        isStale,
+        /** True when a navigation transition is in progress */
+        isPending: router.isPending,
+        /** True when either navigating or showing stale content */
+        isTransitioning: isStale || router.isPending || router.isNavigating,
+    };
 }
 
 /**
@@ -247,6 +325,8 @@ export type LinkProps = React.PropsWithChildren<
     Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
         href: string;
         replace?: boolean;
+        /** Disable prefetching on hover (default: false - prefetch is enabled) */
+        prefetch?: boolean;
     }
 >;
 
@@ -265,14 +345,21 @@ function isExternalUrl(href: string): boolean {
     }
 }
 
+// Store routes globally for prefetching (set by AppRouter)
+let globalRoutes: RouteEntry[] = [];
+
 /**
  * Client-side navigation link.
  *
  * Intercepts left-clicks and uses the router's navigation helpers for SPA
  * navigation. Keeps normal anchor behaviour when modifier keys are used
  * or when the link is external.
+ *
+ * Automatically prefetches page chunks on hover for faster navigation.
  */
 export function Link(props: LinkProps) {
+    const { prefetch = true } = props;
+
     const onClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (
             e.defaultPrevented ||
@@ -289,10 +376,27 @@ export function Link(props: LinkProps) {
         navigate(props.href, props.replace);
         props.onClick?.(e);
     };
-    const { children, href, className, ...safeProps } = props;
+
+    const onMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        // Prefetch the route on hover if enabled and not external
+        if (prefetch && !isExternalUrl(props.href) && globalRoutes.length > 0) {
+            prefetchRoute(props.href, globalRoutes);
+        }
+        props.onMouseEnter?.(e);
+    };
+
+    const onFocus = (e: React.FocusEvent<HTMLAnchorElement>) => {
+        // Also prefetch on focus (keyboard navigation)
+        if (prefetch && !isExternalUrl(props.href) && globalRoutes.length > 0) {
+            prefetchRoute(props.href, globalRoutes);
+        }
+        props.onFocus?.(e);
+    };
+
+    const { children, href, className, prefetch: _prefetch, ...safeProps } = props;
 
     return (
-        <a href={href} onClick={onClick} className={className} {...safeProps}>
+        <a href={href} onClick={onClick} onMouseEnter={onMouseEnter} onFocus={onFocus} className={className} {...safeProps}>
             {children}
         </a>
     );
@@ -311,29 +415,49 @@ export type AppShellProps<TPageProps extends Record<string, unknown> = Record<st
 
 // Main router component
 export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps> }) {
+    // useTransition for concurrent rendering - allows React to keep UI responsive during navigation
+    const [isPending, startTransition] = useTransition();
+
     // Build routes once on mount (client-side only)
     const { routes, NotFound } = useMemo(() => {
         if (typeof window === "undefined") {
             return { routes: [], NotFound: undefined };
         }
-        return buildRoutes();
+        const result = buildRoutes();
+        // Store routes globally for Link prefetching
+        globalRoutes = result.routes;
+        return result;
     }, []);
 
     // Use useSyncExternalStore to subscribe to location changes
     // This ensures synchronous updates when location changes
     const state = useSyncExternalStore(subscribeToLocation, getLocationSnapshot, getServerSnapshot);
 
-    const match = useMemo(() => matchRoute(state.path, routes), [state.path, routes]);
+    // Use deferred path for smoother transitions - React can render new page in background
+    const deferredPath = useDeferredValue(state.path);
+    const isContentStale = deferredPath !== state.path;
+
+    const match = useMemo(() => matchRoute(deferredPath, routes), [deferredPath, routes]);
 
     const routerValue: RouterContext = {
         path: state.path,
         params: match?.params ?? {},
         searchParams: state.searchParams,
-        push: (href) => navigate(href),
-        replace: (href) => navigate(href, true),
+        push: (href) => {
+            // Wrap navigation in startTransition for smoother updates
+            startTransition(() => {
+                navigate(href);
+            });
+        },
+        replace: (href) => {
+            startTransition(() => {
+                navigate(href, true);
+            });
+        },
         on: (event, listener) => routerEventEmitter.on(event, listener),
         status: match ? 200 : 404,
         isNavigating: state.isNavigating,
+        isPending: isPending || isContentStale,
     };
 
     if (!match) {
@@ -343,7 +467,7 @@ export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps
         return <RouterContext.Provider value={routerValue}>{AppShell ? <AppShell Component={NotFoundComp} pageProps={{}} /> : content}</RouterContext.Provider>;
     }
 
-    const Page = match.route.Component;
+    const Page = match.route.Component as ComponentType<{ params: Record<string, string | string[]>; searchParams: URLSearchParams }>;
     const pageProps = {
         params: match.params,
         searchParams: state.searchParams,
@@ -363,4 +487,72 @@ export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps
     const finalContent = AppShell ? <AppShell Component={WrappedPage} pageProps={{}} /> : <WrappedPage />;
 
     return <RouterContext.Provider value={routerValue}>{finalContent}</RouterContext.Provider>;
+}
+
+/**
+ * Props for the PageTransition component.
+ */
+export type PageTransitionProps = {
+    children: React.ReactNode;
+    /** CSS class applied when content is loading/transitioning */
+    loadingClassName?: string;
+    /** Inline style applied when content is loading/transitioning */
+    loadingStyle?: React.CSSProperties;
+    /** Custom fallback to show during Suspense (default: null) */
+    fallback?: React.ReactNode;
+};
+
+/**
+ * Built-in page transition component that handles navigation transitions.
+ *
+ * Wraps children with Suspense for lazy-loaded pages and applies
+ * visual feedback during transitions using React 18+ concurrent features.
+ *
+ * @example
+ * ```tsx
+ * // In your root layout
+ * import { PageTransition } from "helium/client";
+ *
+ * export default function RootLayout({ children }: { children: React.ReactNode }) {
+ *   return (
+ *     <div>
+ *       <Header />
+ *       <PageTransition
+ *         loadingClassName="opacity-50 transition-opacity"
+ *         fallback={<LoadingSpinner />}
+ *       >
+ *         {children}
+ *       </PageTransition>
+ *       <Footer />
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @example
+ * ```tsx
+ * // With inline styles
+ * <PageTransition
+ *   loadingStyle={{ opacity: 0.6, transition: 'opacity 150ms ease' }}
+ * >
+ *   {children}
+ * </PageTransition>
+ * ```
+ */
+export function PageTransition({ children, loadingClassName, loadingStyle, fallback = null }: PageTransitionProps) {
+    const { isPending, isTransitioning } = useDeferredNavigation();
+    const isLoading = isPending || isTransitioning;
+
+    const defaultLoadingStyle: React.CSSProperties = {
+        opacity: isLoading ? 0.7 : 1,
+        transition: "opacity 150ms ease",
+    };
+
+    const combinedStyle = loadingStyle ? { ...defaultLoadingStyle, ...(isLoading ? loadingStyle : {}) } : defaultLoadingStyle;
+
+    return (
+        <div className={isLoading ? loadingClassName : undefined} style={combinedStyle}>
+            <React.Suspense fallback={fallback}>{children}</React.Suspense>
+        </div>
+    );
 }
