@@ -105,7 +105,7 @@ function getServerSnapshot() {
 
 function updateLocation() {
     currentLocation = getLocation();
-    locationListeners.forEach(listener => listener());
+    locationListeners.forEach((listener) => listener());
 }
 
 // Set up global listeners once
@@ -114,9 +114,9 @@ if (typeof window !== "undefined") {
     const globalWindow = window as typeof window & { __heliumLocationListenerSetup?: boolean };
     if (!globalWindow.__heliumLocationListenerSetup) {
         globalWindow.__heliumLocationListenerSetup = true;
-        
+
         window.addEventListener("popstate", updateLocation);
-        
+
         // Also listen to navigation events from the emitter
         routerEventEmitter.on("navigation", updateLocation);
     }
@@ -173,7 +173,7 @@ export function useRouter() {
 /**
  * Redirect component for declarative navigation.
  * Use this instead of calling router.push() during render.
- * 
+ *
  * @example
  * \`\`\`tsx
  * export default function Docs() {
@@ -183,28 +183,28 @@ export function useRouter() {
  */
 export function Redirect({ to, replace = false }: { to: string; replace?: boolean }) {
     const hasRedirected = React.useRef(false);
-    
+
     // Use useLayoutEffect to redirect before paint
     React.useLayoutEffect(() => {
         const targetPath = to.split("?")[0];
         if (!hasRedirected.current && window.location.pathname !== targetPath) {
             hasRedirected.current = true;
-            
+
             // Perform navigation
             if (replace) {
                 window.history.replaceState(null, "", to);
             } else {
                 window.history.pushState(null, "", to);
             }
-            
+
             // Emit navigation event to update router state
-            routerEventEmitter.emit("navigation", { 
-                from: window.location.pathname, 
-                to: targetPath 
+            routerEventEmitter.emit("navigation", {
+                from: window.location.pathname,
+                to: targetPath,
             });
         }
     }, [to, replace]);
-    
+
     return null;
 }
 
@@ -307,11 +307,7 @@ export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps
 
     // Use useSyncExternalStore to subscribe to location changes
     // This ensures synchronous updates when location changes
-    const state = useSyncExternalStore(
-        subscribeToLocation,
-        getLocationSnapshot,
-        getServerSnapshot
-    );
+    const state = useSyncExternalStore(subscribeToLocation, getLocationSnapshot, getServerSnapshot);
 
     const match = useMemo(() => matchRoute(state.path, routes), [state.path, routes]);
 
@@ -329,11 +325,7 @@ export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps
         const NotFoundComp = NotFound ?? (() => <div>Not found</div>);
         const content = <NotFoundComp />;
 
-        return (
-            <RouterContext.Provider value={routerValue}>
-                {AppShell ? <AppShell Component={NotFoundComp} pageProps={{}} /> : content}
-            </RouterContext.Provider>
-        );
+        return <RouterContext.Provider value={routerValue}>{AppShell ? <AppShell Component={NotFoundComp} pageProps={{}} /> : content}</RouterContext.Provider>;
     }
 
     const Page = match.route.Component;
