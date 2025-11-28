@@ -35,22 +35,27 @@ export function generateClientModule(methods: MethodExport[]): string {
 }
 
 export function generateTypeDefinitions(methods: MethodExport[], root: string): string {
-    const imports = methods
+    const methodsWithSuffix = methods.map((m, i) => ({
+        ...m,
+        alias: `${m.name}_${i}${Math.random().toString(36).substring(2, 8)}`,
+    }));
+
+    const imports = methodsWithSuffix
         .map((m) => {
             let relPath = path.relative(path.join(root, "src"), m.filePath);
             if (!relPath.startsWith(".")) {
                 relPath = "../" + relPath;
             }
             relPath = relPath.replace(/\.ts$/, "");
-            return `import type { ${m.name} as ${m.name}_def } from '${relPath}';`;
+            return `import type { ${m.name} as ${m.alias} } from '${relPath}';`;
         })
         .join("\n");
 
-    const exports = methods
+    const exports = methodsWithSuffix
         .map((m) => {
             return `export const ${m.name}: import('helium/client').MethodStub<
-    Parameters<typeof ${m.name}_def['handler']>[0],
-    Awaited<ReturnType<typeof ${m.name}_def['handler']>>
+    Parameters<typeof ${m.alias}['handler']>[0],
+    Awaited<ReturnType<typeof ${m.alias}['handler']>>
 >;`;
         })
         .join("\n");
