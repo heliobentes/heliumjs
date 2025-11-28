@@ -1,6 +1,6 @@
 // Router components and hooks
 export type { AppShellProps, LinkProps } from "./Router.js";
-export { AppRouter, Link, RouterContext, useRouter } from "./Router.js";
+export { AppRouter, Link, Redirect, RouterContext, useRouter } from "./Router.js";
 export type { LayoutProps } from "./routerManifest.js";
 
 // RPC hooks for data fetching and mutations

@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useSyncExternalStore } from "react";
 
 import type { RouteEntry } from "./routerManifest.js";
 import { buildRoutes } from "./routerManifest.js";
@@ -42,9 +42,26 @@ class RouterEventEmitter {
 
         return !prevented;
     }
+
+    // Clear all listeners - useful for HMR
+    clear() {
+        this.listeners.clear();
+    }
 }
 
-const routerEventEmitter = new RouterEventEmitter();
+// Use a singleton that survives HMR by attaching to window in dev mode
+let routerEventEmitter: RouterEventEmitter;
+
+if (typeof window !== "undefined" && import.meta.env?.DEV) {
+    // In dev mode, reuse the same emitter instance across HMR
+    const globalWindow = window as typeof window & { __heliumRouterEmitter?: RouterEventEmitter };
+    if (!globalWindow.__heliumRouterEmitter) {
+        globalWindow.__heliumRouterEmitter = new RouterEventEmitter();
+    }
+    routerEventEmitter = globalWindow.__heliumRouterEmitter;
+} else {
+    routerEventEmitter = new RouterEventEmitter();
+}
 
 type RouterState = {
     path: string;
@@ -69,6 +86,42 @@ function matchRoute(path: string, routes: RouteEntry[]) {
     return null;
 }
 
+// Location store for useSyncExternalStore
+let currentLocation = typeof window !== "undefined" ? getLocation() : { path: "/", searchParams: new URLSearchParams() };
+const locationListeners = new Set<() => void>();
+
+function subscribeToLocation(callback: () => void) {
+    locationListeners.add(callback);
+    return () => locationListeners.delete(callback);
+}
+
+function getLocationSnapshot() {
+    return currentLocation;
+}
+
+function getServerSnapshot() {
+    return { path: "/", searchParams: new URLSearchParams() };
+}
+
+function updateLocation() {
+    currentLocation = getLocation();
+    locationListeners.forEach(listener => listener());
+}
+
+// Set up global listeners once
+if (typeof window !== "undefined") {
+    // Only set up once, survives HMR
+    const globalWindow = window as typeof window & { __heliumLocationListenerSetup?: boolean };
+    if (!globalWindow.__heliumLocationListenerSetup) {
+        globalWindow.__heliumLocationListenerSetup = true;
+        
+        window.addEventListener("popstate", updateLocation);
+        
+        // Also listen to navigation events from the emitter
+        routerEventEmitter.on("navigation", updateLocation);
+    }
+}
+
 // Context for useRouter hook
 type RouterContext = {
     path: string;
@@ -86,7 +139,7 @@ export const RouterContext = React.createContext<RouterContext | null>(null);
  * Access router context inside a component tree managed by <AppRouter />.
  *
  * Provides current path, route params, URL search params and navigation helpers
- * (`push`, `replace`) as well as an `on` method to subscribe to navigation events.
+ * (\`push\`, \`replace\`) as well as an \`on\` method to subscribe to navigation events.
  * Throws when used outside of an <AppRouter /> provider.
  */
 export function useRouter() {
@@ -94,16 +147,22 @@ export function useRouter() {
     if (!ctx) {
         // During HMR in development, context might be temporarily unavailable
         // Provide a temporary fallback to prevent white screen of death
-        if (import.meta.env?.DEV) {
+        if (typeof window !== "undefined" && import.meta.env?.DEV) {
             console.warn("useRouter called before RouterContext is available (HMR reload). Using fallback.");
             return {
                 path: window.location.pathname,
                 params: {},
                 searchParams: new URLSearchParams(window.location.search),
-                push: (href: string) => window.history.pushState({}, "", href),
-                replace: (href: string) => window.history.replaceState({}, "", href),
+                push: (href: string) => {
+                    window.history.pushState({}, "", href);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                },
+                replace: (href: string) => {
+                    window.history.replaceState({}, "", href);
+                    window.dispatchEvent(new PopStateEvent("popstate"));
+                },
                 on: () => () => {},
-                status: 200,
+                status: 200 as const,
             };
         }
         throw new Error("useRouter must be used inside <AppRouter>");
@@ -111,7 +170,45 @@ export function useRouter() {
     return ctx;
 }
 
-// Navigation helpers
+/**
+ * Redirect component for declarative navigation.
+ * Use this instead of calling router.push() during render.
+ * 
+ * @example
+ * \`\`\`tsx
+ * export default function Docs() {
+ *   return <Redirect to="/docs/getting-started" />;
+ * }
+ * \`\`\`
+ */
+export function Redirect({ to, replace = false }: { to: string; replace?: boolean }) {
+    const hasRedirected = React.useRef(false);
+    
+    // Use useLayoutEffect to redirect before paint
+    React.useLayoutEffect(() => {
+        const targetPath = to.split("?")[0];
+        if (!hasRedirected.current && window.location.pathname !== targetPath) {
+            hasRedirected.current = true;
+            
+            // Perform navigation
+            if (replace) {
+                window.history.replaceState(null, "", to);
+            } else {
+                window.history.pushState(null, "", to);
+            }
+            
+            // Emit navigation event to update router state
+            routerEventEmitter.emit("navigation", { 
+                from: window.location.pathname, 
+                to: targetPath 
+            });
+        }
+    }, [to, replace]);
+    
+    return null;
+}
+
+// Navigation helper
 function navigate(href: string, replace = false) {
     const from = window.location.pathname;
     const to = href.split("?")[0]; // Extract pathname from href
@@ -189,13 +286,13 @@ export function Link(props: LinkProps) {
 
 // AppShell props type
 /**
- * Props passed to an optional `AppShell` wrapper component used by <AppRouter />.
+ * Props passed to an optional \`AppShell\` wrapper component used by <AppRouter />.
  *
- * `Component` — the page component to render. `pageProps` — props provided to the page.
+ * \`Component\` — the page component to render. \`pageProps\` — props provided to the page.
  */
 export type AppShellProps = {
-    Component: ComponentType<any>;
-    pageProps: any;
+    Component: ComponentType<unknown>;
+    pageProps: unknown;
 };
 
 // Main router component
@@ -208,24 +305,13 @@ export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps
         return buildRoutes();
     }, []);
 
-    // Always use the current location if running in browser
-    // This prevents hydration mismatches and flash of wrong route
-    const [state, setState] = useState<RouterState>(() => {
-        if (typeof window === "undefined") {
-            return { path: "/", searchParams: new URLSearchParams() };
-        }
-        return getLocation();
-    });
-
-    useEffect(() => {
-        const onLocationChange = () => setState(getLocation());
-        window.addEventListener("popstate", onLocationChange);
-        const unsubscribe = routerEventEmitter.on("navigation", onLocationChange);
-        return () => {
-            window.removeEventListener("popstate", onLocationChange);
-            unsubscribe();
-        };
-    }, []);
+    // Use useSyncExternalStore to subscribe to location changes
+    // This ensures synchronous updates when location changes
+    const state = useSyncExternalStore(
+        subscribeToLocation,
+        getLocationSnapshot,
+        getServerSnapshot
+    );
 
     const match = useMemo(() => matchRoute(state.path, routes), [state.path, routes]);
 
@@ -243,7 +329,11 @@ export function AppRouter({ AppShell }: { AppShell?: ComponentType<AppShellProps
         const NotFoundComp = NotFound ?? (() => <div>Not found</div>);
         const content = <NotFoundComp />;
 
-        return <RouterContext.Provider value={routerValue}>{AppShell ? <AppShell Component={NotFoundComp} pageProps={{}} /> : content}</RouterContext.Provider>;
+        return (
+            <RouterContext.Provider value={routerValue}>
+                {AppShell ? <AppShell Component={NotFoundComp} pageProps={{}} /> : content}
+            </RouterContext.Provider>
+        );
     }
 
     const Page = match.route.Component;

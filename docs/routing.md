@@ -341,6 +341,55 @@ router.replace("/login");
 - Replacing temporary URLs
 - Preventing back navigation to intermediate states
 
+### Redirect Component
+
+For declarative redirects, use the `Redirect` component instead of calling `router.push()` during render:
+
+```tsx
+import { Redirect } from "helium/client";
+
+export default function OldDocsPage() {
+    return <Redirect to="/docs/getting-started" />;
+}
+```
+
+**Props:**
+
+- `to` (string): Target URL
+- `replace` (boolean, optional): Use `history.replace` instead of `history.push` (default: `false`)
+
+**Why use Redirect?**
+
+Calling `router.push()` directly during render is an anti-pattern in React that can cause issues. The `Redirect` component uses `useLayoutEffect` internally to ensure navigation happens after the component mounts but before paint, following React best practices and preventing issues with server-side rendering.
+
+**Example use cases:**
+
+```tsx
+// Redirect index page to a default subpage
+// src/pages/docs/index.tsx
+import { Redirect } from "helium/client";
+
+export default function DocsIndex() {
+    return <Redirect to="/docs/getting-started" />;
+}
+
+// Redirect with replace (no history entry)
+export default function OldPage() {
+    return <Redirect to="/new-page" replace />;
+}
+
+// Conditional redirect
+export default function ProtectedPage() {
+    const isAuthenticated = useAuth();
+    
+    if (!isAuthenticated) {
+        return <Redirect to="/login" />;
+    }
+    
+    return <div>Protected content</div>;
+}
+```
+
 #### `on(event: RouterEvent, listener: EventListener)`
 
 Subscribe to router events. Returns an unsubscribe function:
@@ -502,21 +551,13 @@ export default function SearchPage() {
 
 ```tsx
 // src/pages/(app)/dashboard.tsx
-import { useRouter } from "helium/client";
-import { useEffect } from "react";
+import { Redirect } from "helium/client";
 
 export default function DashboardPage() {
-    const router = useRouter();
     const isAuthenticated = checkAuth();  // Your auth logic
     
-    useEffect(() => {
-        if (!isAuthenticated) {
-            router.replace("/login");
-        }
-    }, [isAuthenticated, router]);
-    
     if (!isAuthenticated) {
-        return <div>Redirecting...</div>;
+        return <Redirect to="/login" replace />;
     }
     
     return <div>Dashboard content</div>;
