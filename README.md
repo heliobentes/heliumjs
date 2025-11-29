@@ -321,7 +321,9 @@ See [SSG Documentation](./docs/ssg.md) for detailed information including limita
 -   [Context API](./docs/context-api.md) - Access request metadata including client IPs and headers
 -   [Proxy Configuration](./docs/proxy-configuration.md) - Configure IP detection for rate limiting behind proxies
 -   [HTTP Handlers & Webhooks](./docs/http-handlers.md) - Create custom HTTP endpoints for webhooks and REST APIs
--   [Production Deployment](./docs/production-deployment.md) - Deploy to production platforms (Digital Ocean, Docker, etc.)
+-   [Production Deployment](./docs/production-deployment.md) - Deploy to production platforms and platform compatibility
+
+> ⚠️ **Hosting Note:** Helium requires a platform that supports persistent Node.js servers (e.g., Digital Ocean, Railway, Render). Serverless platforms like **Vercel and Netlify are not fully compatible** due to WebSocket limitations. See [Production Deployment](./docs/production-deployment.md) for details.
 
 ## 6. Contributing
 

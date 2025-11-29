@@ -1,5 +1,54 @@
 # Production Deployment
 
+## Platform Compatibility
+
+Helium uses WebSocket-based RPC for real-time communication between client and server. This architecture requires a **persistent server process**, which affects your choice of hosting platform.
+
+### ✅ Fully Compatible Platforms
+
+These platforms support persistent Node.js servers and WebSocket connections:
+
+| Platform | WebSocket Support | RPC Support | Notes |
+|----------|------------------|-------------|-------|
+| **Digital Ocean App Platform** | ✅ | ✅ | Recommended. Full support for all features |
+| **Railway** | ✅ | ✅ | Excellent for quick deployments |
+| **Render** | ✅ | ✅ | Free tier available |
+| **Fly.io** | ✅ | ✅ | Great for edge deployments |
+| **AWS EC2 / ECS** | ✅ | ✅ | Full control, requires more setup |
+| **Google Cloud Run** | ✅ | ✅ | Set `--session-affinity` for WebSockets |
+| **Heroku** | ✅ | ✅ | Use `heroku labs:enable http-session-affinity` |
+| **Self-hosted / VPS** | ✅ | ✅ | Docker or direct Node.js |
+
+### ⚠️ Limited Compatibility Platforms
+
+These platforms have fundamental limitations that affect Helium features:
+
+| Platform | Issue | What Works | What Doesn't Work |
+|----------|-------|------------|-------------------|
+| **Vercel** | Serverless (no persistent connections) | SSG pages, static assets | WebSocket RPC, direct URL navigation to dynamic routes |
+| **Netlify** | Serverless (no persistent connections) | SSG pages, static assets | WebSocket RPC, direct URL navigation to dynamic routes |
+| **Cloudflare Pages** | Serverless | SSG pages, static assets | WebSocket RPC |
+
+### Using Helium on Vercel/Netlify (Limited Mode)
+
+If you must use Vercel or Netlify, Helium can work in **SSG-only mode**:
+
+1. **Pre-render all pages** using SSG (see [SSG documentation](./ssg.md))
+2. **Avoid RPC calls** - use external APIs or pre-fetched data instead
+3. **Add SPA fallback** with a `vercel.json`:
+
+```json
+{
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+    ]
+}
+```
+
+**Note:** Even with SPA fallback, refreshing a page or navigating directly to a URL (not from the home page) may fail if that route requires server-side data.
+
+---
+
 ## Configuration Files in Production
 
 When deploying your Helium application, the framework needs to load your `helium.config` file. The build process automatically handles TypeScript config files for you.
@@ -60,11 +109,30 @@ EXPOSE 3000
 CMD ["node", "dist/server.js"]
 ```
 
-#### Vercel / Netlify
+#### Vercel / Netlify (Limited Support)
 
-These platforms typically run in development mode with Vite, so config transpilation isn't needed. The `.ts` config file works directly.
+> ⚠️ **Important:** Vercel and Netlify are **serverless platforms** that do not support persistent WebSocket connections. This means:
+> - **WebSocket-based RPC will not work**
+> - **Direct URL navigation** to routes (other than the home page) will return 404 errors
+> - Only **pre-rendered SSG pages** and **SPA navigation from the home page** work correctly
 
-Vercel might not be compatible with WebSocket-based features due to serverless limitations.
+**If you need full Helium functionality, use a platform that supports persistent servers** (see [Platform Compatibility](#platform-compatibility) above).
+
+For SSG-only deployments on Vercel, add a `vercel.json`:
+
+```json
+{
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
+    ]
+}
+```
+
+For Netlify, add a `_redirects` file in your `public` folder:
+
+```
+/*    /index.html   200
+```
 
 ### Manual Config Conversion
 
