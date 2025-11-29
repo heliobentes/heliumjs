@@ -1,8 +1,8 @@
-# HeliumJS — Copilot Instructions
+# HeliumTS — Copilot Instructions
 
-## What HeliumJS Is
+## What HeliumTS Is
 
-HeliumJS is a file-based RPC framework.
+HeliumTS is a file-based RPC framework.
 Client code imports server functions directly (through virtual modules) and calls them over a persistent WebSocket connection.
 There is no REST, no fetch/axios, no API routes, and no Next.js-style routing.
 
@@ -29,7 +29,7 @@ The Vite plugin generates:
 ### 1. Client stub module (imported by user code)
 
 ```
-import { getTasks } from "helium/server";
+import { getTasks } from "heliumts/server";
 ```
 
 This module only provides metadata stubs (method ids), not actual server code.
@@ -37,7 +37,7 @@ This module only provides metadata stubs (method ids), not actual server code.
 ### 2. Server manifest (used internally by the RPC server)
 
 ```
-import { serverMethods } from "helium/__serverManifest";
+import { serverMethods } from "heliumts/__serverManifest";
 ```
 
 The manifest maps method ids to actual server handlers.
@@ -46,7 +46,7 @@ The manifest maps method ids to actual server handlers.
 
 ## Client Runtime
 
-HeliumJS exposes two hooks from "helium/client":
+HeliumTS exposes two hooks from "heliumts/client":
 
 ### `useFetch(method, args)`
 
@@ -84,9 +84,9 @@ No HTTP is used for application data.
 
 ## Peer Dependency Rules (Critical)
 
-HeliumJS exports React hooks, so React must be a peer dependency, not bundled.
+HeliumTS exports React hooks, so React must be a peer dependency, not bundled.
 
-Required in helium/package.json:
+Required in heliumts/package.json:
 
 ```
 "peerDependencies": {
@@ -104,7 +104,7 @@ This prevents "Invalid hook call" errors caused by duplicate React instances.
 
 - Treat defineMethod() as the only way to create server RPC functions.
 - Assume server files live under src/server/\*\*.
-- Suggest imports from "helium/server" for client-side usage.
+- Suggest imports from "heliumts/server" for client-side usage.
 - Generate code consistent with RPC-over-WebSocket, not REST.
 - Keep internal modules small, focused, and TypeScript-first.
 - Maintain clear separation between client runtime, server runtime, protocol, and Vite plugin logic.
@@ -117,17 +117,17 @@ This prevents "Invalid hook call" errors caused by duplicate React instances.
 - Do not generate REST routes, fetch calls, axios, or Express routers.
 - Do not propose Next.js patterns or React Server Components.
 - Do not import server files directly into client code.
-- Do not bundle React inside the HeliumJS package.
+- Do not bundle React inside the HeliumTS package.
 - Do not introduce overly complex RPC or transport mechanisms.
 
 ---
 
-## HeliumJS Philosophy
+## HeliumTS Philosophy
 
 Write a server function.
 Import it on the client.
 Call it like a normal function.
-HeliumJS takes care of everything else.
+HeliumTS takes care of everything else.
 
 Simple, file-based, strongly typed, and WebSocket-native.
 

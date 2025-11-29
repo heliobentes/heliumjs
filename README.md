@@ -3,9 +3,9 @@
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/heliobentes/heliumjs)](https://github.com/heliobentes/heliumjs/pulls)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
-# HeliumJS
+# HeliumTS
 
-HeliumJS is a blazing fast 🚀 and opinionated full-stack React + Vite framework designed for simplicity and type safety. It provides seamless RPC communication and file-based routing.
+HeliumTS is a blazing fast 🚀 and opinionated full-stack React + Vite framework designed for simplicity and type safety. It provides seamless RPC communication and file-based routing.
 
 ## Table of Contents
 
@@ -31,7 +31,7 @@ HeliumJS is a blazing fast 🚀 and opinionated full-stack React + Vite framewor
 
 ### 1.1. Installation
 
-An installation script is coming soon! Meanwhile, follow these steps to set up a new HeliumJS project.
+An installation script is coming soon! Meanwhile, follow these steps to set up a new HeliumTS project.
 
 #### 1.1.1. Install React + Vite
 
@@ -41,16 +41,15 @@ npm create vite@latest my-helium-app -- --template react-ts
 #### 1.1.2. Install HeliumJS
 
 ```bash
-npm install github:heliobentes/heliumjs
+npm install heliumts
 ```
-*NPM package is coming soon!*
 
 #### 1.1.3. Setup Vite Config
 Create or update `vite.config.ts` in the project root to include Helium's Vite plugin:
 
 ```typescript
 import react from '@vitejs/plugin-react';
-import helium from 'helium/vite';
+import helium from 'heliumts/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
@@ -59,7 +58,7 @@ export default defineConfig({
 ```
 
 #### 1.1.4. Delete **main.tsx**
-Delete the `src/main.tsx` file created by Vite, as HeliumJS handles the client entry point automatically.
+Delete the `src/main.tsx` file created by Vite, as HeliumTS handles the client entry point automatically.
 Also, remove its reference from `index.html` if present.
 ```html
 <!-- Remove this from index.html -->
@@ -69,7 +68,7 @@ Also, remove its reference from `index.html` if present.
 #### 1.1.5. Update `src/App.tsx`
 Replace the contents of `src/App.tsx` with the following content:
 ```tsx
-import { type AppShellProps } from "helium/client";
+import { type AppShellProps } from "heliumts/client";
 
 export default function App({ Component, pageProps }: AppShellProps) {
     return <Component {...pageProps} />;
@@ -96,7 +95,7 @@ Check the working Example APP at: [https://github.com/heliobentes/heliumjs-examp
 
 ## 2. Project Structure
 
-A typical HeliumJS project looks like this:
+A typical HeliumTS project looks like this:
 
 ```
 src/
@@ -121,7 +120,7 @@ vite.config.ts       # Vite configuration
 
 ## 3. Core Concepts
 
-Using HeliumJS makes it easy to build full-stack applications with minimal boilerplate. It removes the need for separate API routes and REST endpoints by enabling direct RPC calls from the client to server methods using websocket.
+Using HeliumTS makes it easy to build full-stack applications with minimal boilerplate. It removes the need for separate API routes and REST endpoints by enabling direct RPC calls from the client to server methods using websocket.
 
 No more `Axios` or `fetch` calls! Just define your server methods and call them directly from your React components with full type safety.
 
@@ -132,7 +131,7 @@ Define server-side functions using `defineMethod` and call them from the client 
 **Server (`src/server/tasks.ts`):**
 
 ```typescript
-import { defineMethod } from "helium/server";
+import { defineMethod } from "heliumts/server";
 
 // Getting tasks
 export const getTasks = defineMethod(async (args: { status: string }) => {
@@ -150,8 +149,8 @@ export const createTask = defineMethod(async (args: { name: string }) => {
 **Client (`src/pages/tasks.tsx`):**
 
 ```tsx
-import { useFetch, useCall } from "helium/client";
-import { getTasks, createTask } from "helium/server";
+import { useFetch, useCall } from "heliumts/client";
+import { getTasks, createTask } from "heliumts/server";
 
 export default function TasksPage() {
     // Fetch data (auto-runs on mount)
@@ -192,7 +191,7 @@ Helium uses file-based routing in the `src/pages` directory similar to
 Helium provides a `Link` component for client-side navigation:
 
 ```tsx
-import { Link } from "helium/client";
+import { Link } from "heliumts/client";
 
 <Link href="/about">Go to About</Link>
 ```
@@ -202,7 +201,7 @@ import { Link } from "helium/client";
 Access routing information and navigation methods:
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 function MyComponent() {
     const router = useRouter();
@@ -236,7 +235,7 @@ Useful for integrating with third-party services like Stripe, GitHub, and Auth c
 **Server (`src/server/webhooks.ts`):**
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 
 export const stripeWebhook = defineHTTPRequest("POST", "/webhooks/stripe", async (req, ctx) => {
     const body = await req.json();
@@ -248,7 +247,7 @@ export const stripeWebhook = defineHTTPRequest("POST", "/webhooks/stripe", async
 **Server (`src/server/auth.ts`):**
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 
 export const authHandler = defineHTTPRequest("ALL", "/auth/:provider", async (req, ctx) => {
     // Call the better-auth handler directly
@@ -264,7 +263,7 @@ You can define a middleware to intercept requests to the server.
 **Server (`src/server/_middleware.ts`):**
 
 ```typescript
-import { middleware } from "helium/server";
+import { middleware } from "heliumts/server";
 
 export default middleware(async (ctx, next) => {
     console.log("Request received");
@@ -277,7 +276,7 @@ export default middleware(async (ctx, next) => {
 Helium's configuration file allows you to customize server settings including RPC encoding, compression, security, and proxy configuration.
 
 ```typescript
-import type { HeliumConfig } from "helium/server";
+import type { HeliumConfig } from "heliumts/server";
 
 const config: HeliumConfig = {
     trustProxyDepth: 1,  // Trust 1 proxy level (e.g., Vercel)
@@ -301,7 +300,7 @@ export default config;
 See [Configuration Documentation](./docs/helium-config.md) for detailed options.
 
 ### 3.6 Static Site Generation (SSG)
-HeliumJS supports Static Site Generation (SSG) through pre-rendering pages at build time.
+HeliumTS supports Static Site Generation (SSG) through pre-rendering pages at build time.
 
 Add a `"use ssg";` directive at the top of your page component to enable SSG:
 

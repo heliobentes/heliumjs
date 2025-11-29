@@ -1,6 +1,6 @@
-# Contributing to HeliumJS
+# Contributing to HeliumTS
 
-Thank you for your interest in contributing to HeliumJS! We welcome contributions from the community to help make this framework better.
+Thank you for your interest in contributing to HeliumTS! We welcome contributions from the community to help make this framework better.
 
 ## Table of Contents
 
@@ -258,7 +258,7 @@ git push origin feature/your-feature-name
 
 ### 2. Create a Pull Request
 
-1. Go to the [HeliumJS repository](https://github.com/heliobentes/heliumjs)
+1. Go to the [HeliumTS repository](https://github.com/heliobentes/heliumjs)
 2. Click "New Pull Request"
 3. Select your fork and branch
 4. Fill out the PR template:
@@ -512,7 +512,7 @@ When reporting bugs, include:
 5. **Environment:**
     - Node.js version
     - npm/yarn version
-    - HeliumJS version
+    - HeliumTS version
     - Operating system
 6. **Code Sample:** Minimal reproducible example
 7. **Error Messages:** Full error messages or stack traces
@@ -563,7 +563,7 @@ This entire project was initially created with the assistance of AI tools. We be
 
 ## License
 
-By contributing to HeliumJS, you agree that your contributions will be licensed under the MIT License.
+By contributing to HeliumTS, you agree that your contributions will be licensed under the MIT License.
 
 ## Questions?
 
@@ -573,4 +573,4 @@ If you have questions about contributing, feel free to:
 - Open an [issue](https://github.com/heliobentes/heliumjs/issues)
 - Email: [heliobentes@example.com] (Update with actual contact)
 
-Thank you for contributing to HeliumJS! 🚀
+Thank you for contributing to HeliumTS! 🚀

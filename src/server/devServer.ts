@@ -31,7 +31,7 @@ let wss: WebSocketServer | null = null;
 let rateLimiter: RateLimiter | null = null;
 
 /**
- * Attaches HeliumJS HTTP handlers and WebSocket RPC server to an existing HTTP server.
+ * Attaches HeliumTS HTTP handlers and WebSocket RPC server to an existing HTTP server.
  * This is used in dev mode to attach to Vite's dev server.
  */
 export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHandlersFn, config: HeliumConfig = {}) {

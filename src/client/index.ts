@@ -4,7 +4,7 @@ export { AppRouter, Link, Redirect, RouterContext, useRouter } from "./Router.js
 export type { LayoutProps } from "./routerManifest.js";
 
 // React 18+ page transitions (separate module for better tree-shaking)
-// Import from "helium/client/transitions" to ensure they're only bundled when used
+// Import from "heliumts/client/transitions" to ensure they're only bundled when used
 export type { PageTransitionProps } from "./transitions.js";
 
 // RPC hooks for data fetching and mutations

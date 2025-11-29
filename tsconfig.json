@@ -28,7 +28,7 @@
 
         /* Paths */
         "paths": {
-            "helium/*": ["./src/*"]
+            "heliumts/*": ["./src/*"]
         }
     },
 

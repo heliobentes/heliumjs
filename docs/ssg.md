@@ -2,7 +2,7 @@
 
 ## Overview
 
-HeliumJS supports Static Site Generation (SSG) through pre-rendering pages at build time. SSG allows you to generate static HTML files for pages that don't require server-side rendering or dynamic data, improving performance and reducing server load.
+HeliumTS supports Static Site Generation (SSG) through pre-rendering pages at build time. SSG allows you to generate static HTML files for pages that don't require server-side rendering or dynamic data, improving performance and reducing server load.
 
 ## Quick Start
 
@@ -153,7 +153,7 @@ export default function Page() {
 ```tsx
 "use ssg";
 
-import { useFetch, useCall } from "helium/client"; // ⚠️ Warning!
+import { useFetch, useCall } from "heliumts/client"; // ⚠️ Warning!
 
 export default function Page() {
     const { data } = useFetch(getTasks); // Won't work in SSG
@@ -161,7 +161,7 @@ export default function Page() {
 }
 ```
 
-**Warning:** `Page imports from 'helium/client' which requires client-side execution`
+**Warning:** `Page imports from 'heliumts/client' which requires client-side execution`
 
 **What it means:** Client-side features like `useFetch`, `useCall`, and `useRouter` require a WebSocket connection and won't work during static generation.
 
@@ -176,7 +176,7 @@ export default function Page() {
 ```tsx
 "use ssg";
 
-import { getTasks } from "helium/server"; // ⚠️ Warning!
+import { getTasks } from "heliumts/server"; // ⚠️ Warning!
 
 export default function Page() {
     // Can't call server methods during SSG
@@ -184,7 +184,7 @@ export default function Page() {
 }
 ```
 
-**Warning:** `Page imports from 'helium/server' which may cause runtime issues`
+**Warning:** `Page imports from 'heliumts/server' which may cause runtime issues`
 
 **What it means:** Server-side methods aren't callable during static generation.
 
@@ -237,7 +237,7 @@ During SSG, router features are mocked to allow pages to render:
 ```tsx
 "use ssg";
 
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function Page() {
     const router = useRouter();
@@ -259,7 +259,7 @@ The `path` reflects the page being generated (e.g., `/about` for `about.tsx`).
 ```tsx
 "use ssg";
 
-import { Link } from "helium/client";
+import { Link } from "heliumts/client";
 
 export default function Page() {
     return (
@@ -277,8 +277,8 @@ Links render as standard `<a>` tags in the static HTML.
 ```tsx
 "use ssg";
 
-import { useFetch } from "helium/client";
-import { getTasks } from "helium/server";
+import { useFetch } from "heliumts/client";
+import { getTasks } from "heliumts/server";
 
 export default function Page() {
     const { data } = useFetch(getTasks);

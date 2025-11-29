@@ -69,7 +69,7 @@ export type PageTransitionProps = {
  * @example
  * ```tsx
  * // In your root layout
- * import { PageTransition } from "helium/client/transitions";
+ * import { PageTransition } from "heliumts/client/transitions";
  *
  * export default function RootLayout({ children }: { children: React.ReactNode }) {
  *   return (

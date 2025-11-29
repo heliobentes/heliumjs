@@ -61,7 +61,7 @@ export default function helium(): Plugin {
                         tag: "script",
                         attrs: {
                             type: "module",
-                            src: "/node_modules/.helium/entry.tsx",
+                            src: "/node_modules/.heliumts/entry.tsx",
                         },
                         injectTo: "body",
                     },
@@ -87,7 +87,7 @@ export default function helium(): Plugin {
                     include: ["react-dom/client"],
                     // Exclude helium from pre-bundling since it's the framework itself
                     // This ensures changes to helium are picked up immediately
-                    exclude: ["helium", "helium/client", "helium/server", "helium/vite"],
+                    exclude: ["heliumts", "heliumts/client", "heliumts/server", "heliumts/vite"],
                 },
                 define: {
                     ...envDefines,
@@ -110,8 +110,8 @@ export default function helium(): Plugin {
                 // Add .tsx extension so Vite knows it contains JSX
                 return RESOLVED_VIRTUAL_ENTRY_MODULE_ID + ".tsx";
             }
-            // Intercept helium/server imports from client code
-            if (id === "helium/server") {
+            // Intercept heliumts/server imports from client code
+            if (id === "heliumts/server") {
                 // If imported from server code, let it resolve normally
                 if (isServerModule(importer, root, serverDir)) {
                     return null;
@@ -182,7 +182,7 @@ export default function helium(): Plugin {
                 const { methods } = scanServerExports(root);
                 const dts = generateTypeDefinitions(methods, root);
                 const typesDir = path.join(root, "src", "types");
-                const dtsPath = path.join(typesDir, "helium-server.d.ts");
+                const dtsPath = path.join(typesDir, "heliumts-server.d.ts");
 
                 if (!fs.existsSync(typesDir)) {
                     fs.mkdirSync(typesDir, { recursive: true });
@@ -234,7 +234,7 @@ export default function helium(): Plugin {
                     log("error", "Failed to reload Helium server manifest", e);
                 }
 
-                // Trigger HMR for any client code that imports helium/server
+                // Trigger HMR for any client code that imports heliumts/server
                 server.ws.send({
                     type: "full-reload",
                     path: "*",

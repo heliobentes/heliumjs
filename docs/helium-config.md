@@ -9,7 +9,7 @@ Helium's configuration file allows you to customize server settings, RPC behavio
 Create a `helium.config.ts` file in your project root:
 
 ```typescript
-import type { HeliumConfig } from "helium/server";
+import type { HeliumConfig } from "heliumts/server";
 
 const config: HeliumConfig = {
     // Your configuration here
@@ -193,7 +193,7 @@ See [Proxy Configuration](./proxy-configuration.md) for detailed information abo
 Here's a complete configuration example with all options:
 
 ```typescript
-import type { HeliumConfig } from "helium/server";
+import type { HeliumConfig } from "heliumts/server";
 
 const config: HeliumConfig = {
     // Trust 1 proxy level (e.g., Vercel)
@@ -229,7 +229,7 @@ export default config;
 You can use environment variables to adjust configuration based on the deployment environment:
 
 ```typescript
-import type { HeliumConfig } from "helium/server";
+import type { HeliumConfig } from "heliumts/server";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const isProduction = process.env.NODE_ENV === "production";

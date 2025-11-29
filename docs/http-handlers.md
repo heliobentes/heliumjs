@@ -2,7 +2,7 @@
 
 ## Overview
 
-HeliumJS provides `defineHTTPRequest` for creating custom HTTP endpoints. This is useful for:
+HeliumTS provides `defineHTTPRequest` for creating custom HTTP endpoints. This is useful for:
 
 - Webhooks (Stripe, GitHub, etc.)
 - REST APIs
@@ -15,7 +15,7 @@ HTTP handlers receive a normalized `HTTPRequest` object and the Helium context.
 ## Basic Usage
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 
 export const myEndpoint = defineHTTPRequest("GET", "/api/hello", async (req, ctx) => {
     return { message: "Hello World" };
@@ -61,7 +61,7 @@ export const getProduct = defineHTTPRequest("GET", "/api/products/:category/:id"
 Use `*` to match any remaining path segments (useful for proxying or auth providers):
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 import { auth } from "./auth"; // Better Auth or similar
 
 // Matches /api/auth/signin, /api/auth/signout, /api/auth/callback/google, etc.
@@ -135,7 +135,7 @@ export const myHandler = defineHTTPRequest("POST", "/api/data", async (req, ctx)
 To set custom response headers, return a standard Web API `Response` object:
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 
 export const customHeaders = defineHTTPRequest("GET", "/api/data", async (req, ctx) => {
     const data = { message: "Hello World" };
@@ -353,7 +353,7 @@ See [Context API](./context-api.md) for more information.
 Use `toWebRequest()` to convert Helium's request to a standard Web API `Request`:
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 import { auth } from "./auth"; // Better Auth or similar
 
 export const authHandler = defineHTTPRequest("ALL", "/auth/:provider", async (req, ctx) => {
@@ -368,7 +368,7 @@ export const authHandler = defineHTTPRequest("ALL", "/auth/:provider", async (re
 ### Stripe Webhook
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -406,7 +406,7 @@ export const stripeWebhook = defineHTTPRequest("POST", "/webhooks/stripe", async
 ### GitHub Webhook
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 import crypto from "crypto";
 
 export const githubWebhook = defineHTTPRequest("POST", "/webhooks/github", async (req, ctx) => {
@@ -439,7 +439,7 @@ export const githubWebhook = defineHTTPRequest("POST", "/webhooks/github", async
 ### OpenAI API (Non-Streaming)
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -493,7 +493,7 @@ export const chatCompletion = defineHTTPRequest("POST", "/api/chat", async (req,
 ### OpenAI API (Streaming)
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 import OpenAI from "openai";
 
 const openai = new OpenAI({

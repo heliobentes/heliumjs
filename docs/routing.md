@@ -2,7 +2,7 @@
 
 ## Overview
 
-HeliumJS uses file-based routing similar to Next.js Pages Router. Pages are automatically mapped to routes based on their file path in the `src/pages` directory. The framework provides a powerful routing system with support for dynamic routes, catch-all routes, layouts, and route groups.
+HeliumTS uses file-based routing similar to Next.js Pages Router. Pages are automatically mapped to routes based on their file path in the `src/pages` directory. The framework provides a powerful routing system with support for dynamic routes, catch-all routes, layouts, and route groups.
 
 ## File-Based Routing
 
@@ -39,7 +39,7 @@ src/pages/
 
 ```tsx
 // src/pages/users/[id].tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function UserPage() {
     const router = useRouter();
@@ -63,7 +63,7 @@ src/pages/
 
 ```tsx
 // src/pages/docs/[...slug].tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function DocsPage() {
     const router = useRouter();
@@ -189,7 +189,7 @@ See [Route Groups - Layout Hierarchy](./route-groups.md#layout-hierarchy) for mo
 Use the `Link` component for client-side navigation:
 
 ```tsx
-import { Link } from "helium/client";
+import { Link } from "heliumts/client";
 
 export default function Nav() {
     return (
@@ -237,7 +237,7 @@ Links automatically prefetch page chunks on hover and focus (keyboard navigation
 Use the `useRouter` hook for programmatic navigation:
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -261,7 +261,7 @@ The `useRouter` hook provides access to routing information and navigation metho
 ### Usage
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function MyComponent() {
     const router = useRouter();
@@ -402,7 +402,7 @@ router.replace("/dashboard?tab=analytics", { scrollToTop: false });
 For declarative redirects, use the `Redirect` component instead of calling `router.push()` during render:
 
 ```tsx
-import { Redirect } from "helium/client";
+import { Redirect } from "heliumts/client";
 
 export default function OldDocsPage() {
     return <Redirect to="/docs/getting-started" />;
@@ -423,7 +423,7 @@ Calling `router.push()` directly during render is an anti-pattern in React that 
 ```tsx
 // Redirect index page to a default subpage
 // src/pages/docs/index.tsx
-import { Redirect } from "helium/client";
+import { Redirect } from "heliumts/client";
 
 export default function DocsIndex() {
     return <Redirect to="/docs/getting-started" />;
@@ -488,7 +488,7 @@ Helium provides built-in support for smooth page transitions using React 18+ con
 The `useDeferredNavigation` hook integrates `useDeferredValue` and `useTransition` with the router for smoother navigation:
 
 ```tsx
-import { useDeferredNavigation } from "helium/client/transitions";
+import { useDeferredNavigation } from "heliumts/client/transitions";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
     const { isStale, isPending, isTransitioning } = useDeferredNavigation();
@@ -510,7 +510,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 The `PageTransition` component handles all navigation transition complexity with a simple API:
 
 ```tsx
-import { PageTransition } from "helium/client/transitions";
+import { PageTransition } from "heliumts/client/transitions";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -561,7 +561,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 Fires after navigation completes:
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 import { useEffect } from "react";
 
 export default function Analytics() {
@@ -585,7 +585,7 @@ export default function Analytics() {
 Fires before navigation (can be prevented):
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 import { useEffect } from "react";
 
 export default function UnsavedChangesGuard() {
@@ -616,9 +616,9 @@ export default function UnsavedChangesGuard() {
 
 ```tsx
 // src/pages/blog/[slug].tsx
-import { useRouter } from "helium/client";
-import { useFetch } from "helium/client";
-import { getBlogPost } from "helium/server";
+import { useRouter } from "heliumts/client";
+import { useFetch } from "heliumts/client";
+import { getBlogPost } from "heliumts/server";
 
 export default function BlogPostPage() {
     const router = useRouter();
@@ -642,9 +642,9 @@ export default function BlogPostPage() {
 
 ```tsx
 // src/pages/search.tsx
-import { useRouter } from "helium/client";
-import { useFetch } from "helium/client";
-import { searchProducts } from "helium/server";
+import { useRouter } from "heliumts/client";
+import { useFetch } from "heliumts/client";
+import { searchProducts } from "heliumts/server";
 
 export default function SearchPage() {
     const router = useRouter();
@@ -680,7 +680,7 @@ export default function SearchPage() {
 
 ```tsx
 // src/pages/(app)/dashboard.tsx
-import { Redirect } from "helium/client";
+import { Redirect } from "heliumts/client";
 
 export default function DashboardPage() {
     const isAuthenticated = checkAuth(); // Your auth logic
@@ -697,8 +697,8 @@ export default function DashboardPage() {
 
 ```tsx
 // src/components/Breadcrumbs.tsx
-import { useRouter } from "helium/client";
-import { Link } from "helium/client";
+import { useRouter } from "heliumts/client";
+import { Link } from "heliumts/client";
 
 export default function Breadcrumbs() {
     const router = useRouter();
@@ -725,7 +725,7 @@ export default function Breadcrumbs() {
 
 ```tsx
 // src/components/Analytics.tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 import { useEffect } from "react";
 
 export default function Analytics() {
@@ -762,7 +762,7 @@ function trackNavigationTime(from: string, to: string) {
 
 ```tsx
 // src/components/NavigationLoader.tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function NavigationLoader() {
     const router = useRouter();
@@ -831,7 +831,7 @@ See [Route Groups - Route Collision Detection](./route-groups.md#route-collision
 ### Typing Route Params
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 type UserPageParams = {
     id: string;
@@ -849,7 +849,7 @@ export default function UserPage() {
 ### Typing Search Params
 
 ```tsx
-import { useRouter } from "helium/client";
+import { useRouter } from "heliumts/client";
 
 export default function SearchPage() {
     const router = useRouter();
@@ -876,7 +876,7 @@ export default function SearchPage() {
 
 ```tsx
 // src/main.tsx
-import { AppRouter } from "helium/client";
+import { AppRouter } from "heliumts/client";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(<AppRouter>{/* Your app */}</AppRouter>);
 ```

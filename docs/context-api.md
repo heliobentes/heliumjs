@@ -22,7 +22,7 @@ interface HeliumContext {
 ## Usage in RPC Methods
 
 ```typescript
-import { defineMethod } from "helium/server";
+import { defineMethod } from "heliumts/server";
 
 export const getClientInfo = defineMethod(async (args, ctx) => {
     // Access client IP (extracted based on trustProxyDepth configuration)
@@ -46,7 +46,7 @@ export const getClientInfo = defineMethod(async (args, ctx) => {
 ## Usage in HTTP Handlers
 
 ```typescript
-import { defineHTTPRequest } from "helium/server";
+import { defineHTTPRequest } from "heliumts/server";
 
 export const apiEndpoint = defineHTTPRequest("POST", "/api/data", async (req, ctx) => {
     // Access client IP
@@ -94,7 +94,7 @@ See [Proxy Configuration](./proxy-configuration.md) for more details.
 Middleware can add custom properties to the context:
 
 ```typescript
-import { middleware } from "helium/server";
+import { middleware } from "heliumts/server";
 
 export const authMiddleware = middleware(async (context, next) => {
     // Add custom property
@@ -196,7 +196,7 @@ export const trackEvent = defineMethod(async (args, ctx) => {
 3. **Don't log sensitive header information** - be mindful of privacy
 4. **Use TypeScript types** - import `HeliumContext` for better type safety:
     ```typescript
-    import type { HeliumContext } from "helium/server";
+    import type { HeliumContext } from "heliumts/server";
     ```
 5. **Configure `trustProxyDepth` correctly** - see [Proxy Configuration](./proxy-configuration.md)
 

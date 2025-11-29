@@ -95,7 +95,7 @@ cli.command("build", "Build for production").action(async () => {
 
     // Create the main server module that will be imported after env is loaded
     const serverModuleCode = `
-import { startProdServer, loadConfig } from 'helium/server';
+import { startProdServer, loadConfig } from 'heliumts/server';
 ${manifestCode}
 
 export async function start() {
@@ -125,7 +125,7 @@ await start();
 `;
 
     const envLoaderCode = `
-import { loadEnvFiles, injectEnvToProcess, log } from 'helium/server';
+import { loadEnvFiles, injectEnvToProcess, log } from 'heliumts/server';
 const envRoot = process.cwd();
 log('info', \`Loading .env files from: \${envRoot}\`);
 const envVars = loadEnvFiles({ mode: 'production' });

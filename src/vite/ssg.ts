@@ -72,16 +72,16 @@ function validateSSGPage(filePath: string): SSGValidation {
         warnings.push("Page uses React hooks which may cause hydration issues");
     }
 
-    // Check for helium/client imports - use raw content since imports should be at top level
-    const hasClientImports = /^import\s+.*from\s+['"]helium\/client['"]/m.test(rawContent);
+    // Check for heliumts/client imports - use raw content since imports should be at top level
+    const hasClientImports = /^import\s+.*from\s+['"]heliumts\/client['"]/m.test(rawContent);
     if (hasClientImports) {
-        warnings.push("Page imports from 'helium/client' which requires client-side execution");
+        warnings.push("Page imports from 'heliumts/client' which requires client-side execution");
     }
 
-    // Check for helium/server imports - use raw content since imports should be at top level
-    const hasServerImports = /^import\s+.*from\s+['"]helium\/server['"]/m.test(rawContent);
+    // Check for heliumts/server imports - use raw content since imports should be at top level
+    const hasServerImports = /^import\s+.*from\s+['"]heliumts\/server['"]/m.test(rawContent);
     if (hasServerImports) {
-        warnings.push("Page imports from 'helium/server' which may cause runtime issues");
+        warnings.push("Page imports from 'heliumts/server' which may cause runtime issues");
     }
 
     return {
@@ -296,7 +296,7 @@ async function renderPageToHTML(page: SSGPage, root: string, htmlTemplate: strin
             }
 
             // Load RouterContext from our stub
-            const heliumClient = await viteServer.ssrLoadModule("helium/client");
+            const heliumClient = await viteServer.ssrLoadModule("heliumts/client");
             const RouterContext = heliumClient.RouterContext;
 
             // Mock Router Context with the page's URL
@@ -373,7 +373,7 @@ export async function generateStaticPages(context: any, root: string, htmlTempla
     const { methods } = scanServerExports(root);
     const serverStubCode = `// Auto-generated SSG RPC stub\n${generateClientModule(methods)}\n`;
 
-    // Create a stub for helium/client that provides mock Router and hooks
+    // Create a stub for heliumts/client that provides mock Router and hooks
     const clientStubCode = `
 // Auto-generated SSG client stub
 import React from 'react';
@@ -453,7 +453,7 @@ export const cache = {
     clear: () => {},
 };
 
-// Mock PageTransition and useDeferredNavigation (also available from helium/client/transitions)
+// Mock PageTransition and useDeferredNavigation (also available from heliumts/client/transitions)
 export function useDeferredNavigation() {
     return {
         path: '/',
@@ -469,7 +469,7 @@ export function PageTransition({ children, loadingClassName, loadingStyle, fallb
 }
 `;
 
-    // Create a stub for helium/client/transitions
+    // Create a stub for heliumts/client/transitions
     const transitionsStubCode = `
 // Auto-generated SSG transitions stub
 import React from 'react';
@@ -497,7 +497,7 @@ export default {
 };
 `;
 
-    // Create a stub for helium/client/prefetch
+    // Create a stub for heliumts/client/prefetch
     const prefetchStubCode = `
 // Auto-generated SSG prefetch stub
 export function prefetchRoute() {
@@ -535,18 +535,18 @@ export function clearPrefetchCache() {
         plugins: [heliumPlugin()],
         resolve: {
             alias: [
-                // Most specific aliases first - helium/client/transitions and helium/client/prefetch
-                { find: /^helium\/client\/transitions$/, replacement: ssgTransitionsStubPath },
-                { find: /^helium\/client\/prefetch$/, replacement: ssgPrefetchStubPath },
-                // Then helium/client and helium/server
-                { find: /^helium\/client$/, replacement: ssgClientStubPath },
-                { find: /^helium\/server$/, replacement: ssgServerStubPath },
+                // Most specific aliases first - heliumts/client/transitions and heliumts/client/prefetch
+                { find: /^heliumts\/client\/transitions$/, replacement: ssgTransitionsStubPath },
+                { find: /^heliumts\/client\/prefetch$/, replacement: ssgPrefetchStubPath },
+                // Then heliumts/client and heliumts/server
+                { find: /^heliumts\/client$/, replacement: ssgClientStubPath },
+                { find: /^heliumts\/server$/, replacement: ssgServerStubPath },
             ],
         },
         ssr: {
             external: ["react", "react-dom"],
-            // Don't externalize helium packages - we want to use our stubs
-            noExternal: ["helium"],
+            // Don't externalize heliumts packages - we want to use our stubs
+            noExternal: ["heliumts"],
         },
     });
 

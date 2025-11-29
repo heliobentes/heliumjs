@@ -53,7 +53,7 @@ export function generateTypeDefinitions(methods: MethodExport[], root: string): 
 
     const exports = methodsWithSuffix
         .map((m) => {
-            return `export const ${m.name}: import('helium/client').MethodStub<
+            return `export const ${m.name}: import('heliumts/client').MethodStub<
     Parameters<typeof ${m.alias}['handler']>[0],
     Awaited<ReturnType<typeof ${m.alias}['handler']>>
 >;`;
@@ -67,7 +67,7 @@ export function generateTypeDefinitions(methods: MethodExport[], root: string): 
 **/
 ${imports}
 
-declare module 'helium/server' {
+declare module 'heliumts/server' {
 ${exports}
 }
 `;
@@ -77,7 +77,7 @@ export function generateEntryModule(): string {
     return `
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { AppRouter } from 'helium/client';
+import { AppRouter } from 'heliumts/client';
 import App from '/src/App';
 
 const rootEl = document.getElementById('root');

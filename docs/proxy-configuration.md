@@ -13,7 +13,7 @@ When deploying behind proxies (like Vercel, Cloudflare, AWS ALB, etc.), accurate
 Use the `trustProxyDepth` setting in your `helium.config.ts`:
 
 ```typescript
-import type { HeliumConfig } from "helium/server";
+import type { HeliumConfig } from "heliumts/server";
 
 const config: HeliumConfig = {
     trustProxyDepth: 1, // Set based on your deployment
@@ -137,7 +137,7 @@ Count the number of proxies between your users and your Node.js application:
 Add temporary logging to verify the detected IP:
 
 ```typescript
-import { defineMethod } from "helium/server";
+import { defineMethod } from "heliumts/server";
 
 export const testIP = defineMethod(async (_args, ctx) => {
     // This will log the detected IP with your current config
@@ -160,7 +160,7 @@ export const testIP = defineMethod(async (_args, ctx) => {
 If you need custom IP extraction logic, you can import the utility functions:
 
 ```typescript
-import { extractClientIP, extractClientIPFromRight } from "helium/server";
+import { extractClientIP, extractClientIPFromRight } from "heliumts/server";
 
 // In your HTTP handler
 const clientIP = extractClientIP(req, 1);

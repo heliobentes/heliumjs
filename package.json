@@ -1,8 +1,28 @@
 {
-    "name": "helium",
+    "name": "heliumts",
     "version": "0.2.2",
+    "description": "A lightweight full-stack React framework with file-based routing, RPC, and SSG support",
+    "keywords": [
+        "react",
+        "framework",
+        "vite",
+        "rpc",
+        "ssg",
+        "routing",
+        "full-stack"
+    ],
+    "author": "Helio Bentes",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/heliobentes/heliumjs.git"
+    },
+    "homepage": "https://heliumjs.com",
+    "bugs": {
+        "url": "https://github.com/heliobentes/heliumjs/issues"
+    },
     "bin": {
-        "helium": "./dist/bin/helium.js"
+        "helium": "dist/bin/helium.js"
     },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
