@@ -1,6 +1,6 @@
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/heliobentes/heliumjs)](https://github.com/heliobentes/heliumjs/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/heliobentes/heliumjs)](https://github.com/heliobentes/heliumjs/pulls)
+[![GitHub Issues](https://img.shields.io/github/issues/heliobentes/heliumts)](https://github.com/heliobentes/heliumts/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/heliobentes/heliumts)](https://github.com/heliobentes/heliumts/pulls)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
 # HeliumTS
@@ -38,7 +38,7 @@ An installation script is coming soon! Meanwhile, follow these steps to set up a
 ```bash
 npm create vite@latest my-helium-app -- --template react-ts
 ```
-#### 1.1.2. Install HeliumJS
+#### 1.1.2. Install HeliumTS
 
 ```bash
 npm install heliumts
@@ -91,7 +91,7 @@ npx helium build
 npx helium start
 ```
 
-Check the working Example APP at: [https://github.com/heliobentes/heliumjs-example-app](https://github.com/heliobentes/heliumjs-example-app)
+Check the working Example APP at: [https://github.com/heliobentes/heliumts-example-app](https://github.com/heliobentes/heliumts-example-app)
 
 ## 2. Project Structure
 

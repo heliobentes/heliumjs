@@ -39,7 +39,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Finding Issues to Work On
 
-1. Check the [issue tracker](https://github.com/heliobentes/heliumjs/issues) for open issues
+1. Check the [issue tracker](https://github.com/heliobentes/heliumts/issues) for open issues
 2. Look for issues labeled `good first issue` or `help wanted`
 3. Comment on the issue to let others know you're working on it
 4. If you want to work on something not listed, open an issue first to discuss it
@@ -50,11 +50,11 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ```bash
 # Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/heliumjs.git
-cd heliumjs
+git clone https://github.com/YOUR_USERNAME/heliumts.git
+cd heliumts
 
 # Add the upstream repository
-git remote add upstream https://github.com/heliobentes/heliumjs.git
+git remote add upstream https://github.com/heliobentes/heliumts.git
 ```
 
 ### 2. Install Dependencies
@@ -90,7 +90,7 @@ npx helium dev
 ## Project Structure
 
 ```
-heliumjs/
+heliumts/
 ├── src/
 │   ├── bin/
 │   │   └── helium.ts           # CLI entry point
@@ -157,9 +157,12 @@ Use descriptive branch names:
 # Build the project
 npm run build
 
+# Pack the project
+npm pack
+
 # Test in a real project
 cd ../test-app
-npm install ../heliumjs --force
+npm install file:../heliumts/heliumts-0.0.0.tgz --force
 npx helium dev
 ```
 
@@ -258,7 +261,7 @@ git push origin feature/your-feature-name
 
 ### 2. Create a Pull Request
 
-1. Go to the [HeliumTS repository](https://github.com/heliobentes/heliumjs)
+1. Go to the [HeliumTS repository](https://github.com/heliobentes/heliumts)
 2. Click "New Pull Request"
 3. Select your fork and branch
 4. Fill out the PR template:
@@ -531,8 +534,8 @@ When suggesting features:
 Before asking questions:
 
 1. Check the [documentation](./README.md)
-2. Search [existing issues](https://github.com/heliobentes/heliumjs/issues)
-3. Search [discussions](https://github.com/heliobentes/heliumjs/discussions)
+2. Search [existing issues](https://github.com/heliobentes/heliumts/issues)
+3. Search [discussions](https://github.com/heliobentes/heliumts/discussions)
 
 When asking questions:
 
@@ -569,8 +572,8 @@ By contributing to HeliumTS, you agree that your contributions will be licensed 
 
 If you have questions about contributing, feel free to:
 
-- Open a [discussion](https://github.com/heliobentes/heliumjs/discussions)
-- Open an [issue](https://github.com/heliobentes/heliumjs/issues)
+- Open a [discussion](https://github.com/heliobentes/heliumts/discussions)
+- Open an [issue](https://github.com/heliobentes/heliumts/issues)
 - Email: [heliobentes@example.com] (Update with actual contact)
 
 Thank you for contributing to HeliumTS! 🚀
