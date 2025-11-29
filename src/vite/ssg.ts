@@ -509,8 +509,8 @@ export function clearPrefetchCache() {
 }
 `;
 
-    // Write stub files to node_modules/.helium
-    const heliumInternalDir = path.join(root, "node_modules", ".helium");
+    // Write stub files to node_modules/.heliumts
+    const heliumInternalDir = path.join(root, "node_modules", ".heliumts");
     if (!fs.existsSync(heliumInternalDir)) {
         fs.mkdirSync(heliumInternalDir, { recursive: true });
     }

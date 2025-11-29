@@ -48,7 +48,7 @@ export default function helium(): Plugin {
                 }
 
                 // Generate physical entry file
-                const heliumDir = path.join(root, "node_modules", ".helium");
+                const heliumDir = path.join(root, "node_modules", ".heliumts");
                 if (!fs.existsSync(heliumDir)) {
                     fs.mkdirSync(heliumDir, { recursive: true });
                 }

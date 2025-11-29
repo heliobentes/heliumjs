@@ -137,7 +137,7 @@ if (Object.keys(envVars).length > 0) {
 }
 `;
 
-    const heliumDir = path.join(root, "node_modules", ".helium");
+    const heliumDir = path.join(root, "node_modules", ".heliumts");
     if (!fs.existsSync(heliumDir)) {
         fs.mkdirSync(heliumDir, { recursive: true });
     }
