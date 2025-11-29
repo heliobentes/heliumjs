@@ -138,7 +138,7 @@ export default function helium(): Plugin {
             const { methods } = scanServerExports(root);
             const dts = generateTypeDefinitions(methods, root);
             const typesDir = path.join(root, "src", "types");
-            const dtsPath = path.join(typesDir, "helium-server.d.ts");
+            const dtsPath = path.join(typesDir, "heliumts-server.d.ts");
 
             // Ensure src/types exists
             if (!fs.existsSync(typesDir)) {
