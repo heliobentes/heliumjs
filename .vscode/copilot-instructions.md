@@ -48,12 +48,17 @@ The manifest maps method ids to actual server handlers.
 
 HeliumTS exposes two hooks from "heliumts/client":
 
-### `useFetch(method, args)`
+### `useFetch(method, args, options?)`
 
 - Automatically calls a remote method
 - Re-runs when args change
 - Caches results
 - Used for reading/querying data
+- Options:
+  - `ttl`: Cache TTL in milliseconds (default: 5 minutes)
+  - `refetchOnWindowFocus`: Refetch when tab becomes visible (default: true)
+  - `showLoaderOnRefocus`: Show loader on focus refetch (default: false)
+  - `enabled`: Enable/disable fetching (default: true)
 
 ### `useCall(method, options?)`
 

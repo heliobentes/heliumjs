@@ -11,17 +11,22 @@ import type { MethodStub } from "./types.js";
  * - ttl: optional time-to-live for the cached response (milliseconds).
  * - refetchOnWindowFocus: when true the hook will invalidate cache on
  *   window focus/visibility change and re-run the fetch.
+ * - showLoaderOnRefocus: when false (default), refetches triggered by window
+ *   focus/visibility will update data silently without showing the loading state.
  * - enabled: disable automatic fetching (defaults to true) — useful when
  *   you only want to fetch when a required value (e.g. id) is present.
  */
 export interface UseFetchOptions {
     ttl?: number; // TTL in milliseconds
     refetchOnWindowFocus?: boolean; // Whether to refetch when tab becomes visible
+    showLoaderOnRefocus?: boolean; // Whether to show loader when refetching on focus (defaults to false)
     enabled?: boolean; // Whether to fetch data. Defaults to true. Useful for conditional fetching (e.g., only fetch when an ID exists)
 }
 
 // Global flag to track if visibility listener is registered
 let visibilityListenerRegistered = false;
+// Global flag to indicate refetch is due to focus/visibility (for silent updates)
+let isRefocusRefetch = false;
 
 function registerVisibilityListener() {
     if (visibilityListenerRegistered || typeof document === "undefined") {
@@ -31,12 +36,22 @@ function registerVisibilityListener() {
 
     const handleVisibilityChange = () => {
         if (!document.hidden) {
+            isRefocusRefetch = true;
             invalidateAll();
+            // Reset flag after a microtask to allow all listeners to see it
+            queueMicrotask(() => {
+                isRefocusRefetch = false;
+            });
         }
     };
 
     const handleFocus = () => {
+        isRefocusRefetch = true;
         invalidateAll();
+        // Reset flag after a microtask to allow all listeners to see it
+        queueMicrotask(() => {
+            isRefocusRefetch = false;
+        });
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange, { passive: true });
@@ -55,7 +70,7 @@ function registerVisibilityListener() {
  */
 export function useFetch<TArgs, TResult>(method: MethodStub<TArgs, TResult>, args?: TArgs, options?: UseFetchOptions) {
     const key = cacheKey(method.__id, args);
-    const { ttl, refetchOnWindowFocus = true, enabled = true } = options ?? {};
+    const { ttl, refetchOnWindowFocus = true, showLoaderOnRefocus = false, enabled = true } = options ?? {};
 
     // Register visibility listener if enabled
     useEffect(() => {
@@ -158,32 +173,43 @@ export function useFetch<TArgs, TResult>(method: MethodStub<TArgs, TResult>, arg
     }, [key, method.__id, args, ttl, enabled]);
 
     // This is used to manually refetch data
-    const refetch = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const result = await rpcCall<TResult, TArgs>(method.__id, args as TArgs);
-            set(key, result.data, ttl);
-            setData(result.data);
-            setStats(result.stats);
-            return result.data;
-        } catch (err: any) {
-            setError(err.error);
-            setStats(err.stats);
-            return undefined;
-        } finally {
-            setLoading(false);
-        }
-    }, [args, key, method.__id, ttl]);
+    // When showLoader is false, data updates silently without triggering loading state
+    const refetch = useCallback(
+        async (showLoader: boolean = true) => {
+            if (showLoader) {
+                setLoading(true);
+            }
+            setError(null);
+            try {
+                const result = await rpcCall<TResult, TArgs>(method.__id, args as TArgs);
+                set(key, result.data, ttl);
+                setData(result.data);
+                setStats(result.stats);
+                return result.data;
+            } catch (err: any) {
+                setError(err.error);
+                setStats(err.stats);
+                return undefined;
+            } finally {
+                if (showLoader) {
+                    setLoading(false);
+                }
+            }
+        },
+        [args, key, method.__id, ttl]
+    );
 
     // This is used to automatically refetch data when this method is invalidated
     useEffect(() => {
         return subscribeInvalidations((methodId) => {
             if (methodId === method.__id) {
-                refetch();
+                // Check if this invalidation is from focus/visibility change
+                // If so, only show loader if showLoaderOnRefocus is true
+                const shouldShowLoader = isRefocusRefetch ? showLoaderOnRefocus : true;
+                refetch(shouldShowLoader);
             }
         });
-    }, [method.__id, refetch]);
+    }, [method.__id, refetch, showLoaderOnRefocus]);
 
     return { data, isLoading, error, stats, refetch };
 }

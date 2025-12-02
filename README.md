@@ -312,6 +312,7 @@ See [SSG Documentation](./docs/ssg.md) for detailed information including limita
 -   [Manual Installation](./docs/manual-installation.md) - Step-by-step guide to setting up a HeliumTS project manually
 
 ### Core Features
+-   [Data Fetching](./docs/data-fetching.md) - useFetch and useCall hooks for data fetching and mutations
 -   [Routing & useRouter](./docs/routing.md) - File-based routing, dynamic routes, navigation, and the useRouter hook
 -   [Configuration](./docs/helium-config.md) - Configure RPC encoding, compression, security, and proxy settings
 -   [Static Site Generation](./docs/ssg.md) - Pre-render pages at build time for better performance
