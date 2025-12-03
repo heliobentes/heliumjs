@@ -9,8 +9,8 @@ import {
     getRpcConfig,
     getRpcSecurityConfig,
     getTrustProxyDepth,
-    loadConfig,
     type HeliumConfig,
+    loadConfig,
 } from "../../src/server/config";
 
 describe("config", () => {

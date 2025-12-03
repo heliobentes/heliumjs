@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type { IncomingMessage, ServerResponse } from "http";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { HTTPRouter, type HTTPRoute } from "../../src/server/httpRouter";
 import type { HeliumHTTPDef } from "../../src/server/defineHTTPRequest";
+import { type HTTPRoute, HTTPRouter } from "../../src/server/httpRouter";
 
 describe("HTTPRouter", () => {
     let router: HTTPRouter;
@@ -14,6 +14,7 @@ describe("HTTPRouter", () => {
     describe("registerRoutes", () => {
         it("should register routes", () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/users",
                 handler: vi.fn(),
@@ -79,6 +80,7 @@ describe("HTTPRouter", () => {
 
         it("should match GET routes", async () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/users",
                 handler: vi.fn().mockResolvedValue({ users: [] }),
@@ -97,6 +99,7 @@ describe("HTTPRouter", () => {
 
         it("should match POST routes", async () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "POST",
                 path: "/api/users",
                 handler: vi.fn().mockResolvedValue({ id: 1 }),
@@ -114,6 +117,7 @@ describe("HTTPRouter", () => {
 
         it("should not match wrong HTTP method", async () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "POST",
                 path: "/api/users",
                 handler: vi.fn(),
@@ -133,6 +137,7 @@ describe("HTTPRouter", () => {
         it("should extract path parameters", async () => {
             let capturedRequest: unknown;
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/users/:id",
                 handler: vi.fn().mockImplementation((req) => {
@@ -154,6 +159,7 @@ describe("HTTPRouter", () => {
         it("should extract query parameters", async () => {
             let capturedRequest: unknown;
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/search",
                 handler: vi.fn().mockImplementation((req) => {
@@ -176,6 +182,7 @@ describe("HTTPRouter", () => {
 
         it("should match ALL method for any HTTP method", async () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "ALL",
                 path: "/api/proxy",
                 handler: vi.fn().mockResolvedValue({ ok: true }),
@@ -194,6 +201,7 @@ describe("HTTPRouter", () => {
 
         it("should return 500 on handler error", async () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/error",
                 handler: vi.fn().mockRejectedValue(new Error("Handler error")),
@@ -221,6 +229,7 @@ describe("HTTPRouter", () => {
             const callOrder: string[] = [];
 
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/test",
                 handler: vi.fn().mockImplementation(() => {
@@ -232,6 +241,7 @@ describe("HTTPRouter", () => {
             router.registerRoutes([{ name: "test", handler: mockHandler }]);
 
             router.setMiddleware({
+                __kind: "middleware",
                 handler: async (ctx, next) => {
                     callOrder.push("middleware-before");
                     await next();
@@ -263,6 +273,7 @@ describe("HTTPRouter", () => {
 
         it("should block request if middleware does not call next", async () => {
             const mockHandler: HeliumHTTPDef = {
+                __kind: "http",
                 method: "GET",
                 path: "/api/blocked",
                 handler: vi.fn().mockResolvedValue({ ok: true }),
@@ -271,6 +282,7 @@ describe("HTTPRouter", () => {
             router.registerRoutes([{ name: "blocked", handler: mockHandler }]);
 
             router.setMiddleware({
+                __kind: "middleware",
                 handler: async () => {
                     // Does not call next()
                 },
@@ -448,6 +460,7 @@ describe("HTTPRouter Response handling", () => {
 
     it("should return JSON response for object results", async () => {
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/data",
             handler: vi.fn().mockResolvedValue({ message: "Hello", count: 42 }),
@@ -468,6 +481,7 @@ describe("HTTPRouter Response handling", () => {
     it("should handle cookies in request", async () => {
         let capturedCookies: Record<string, string> = {};
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/test",
             handler: vi.fn().mockImplementation((req) => {
@@ -491,6 +505,7 @@ describe("HTTPRouter Response handling", () => {
         let capturedPath: string | undefined;
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "PUT",
             path: "/api/items/:id",
             handler: vi.fn().mockImplementation((req) => {
@@ -513,6 +528,7 @@ describe("HTTPRouter Response handling", () => {
 
     it("should handle DELETE requests", async () => {
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "DELETE",
             path: "/api/items/:id",
             handler: vi.fn().mockResolvedValue({ deleted: true }),
@@ -531,6 +547,7 @@ describe("HTTPRouter Response handling", () => {
 
     it("should handle PATCH requests", async () => {
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "PATCH",
             path: "/api/items/:id",
             handler: vi.fn().mockResolvedValue({ patched: true }),
@@ -550,6 +567,7 @@ describe("HTTPRouter Response handling", () => {
     it("should normalize query arrays to single values", async () => {
         let capturedQuery: Record<string, string> = {};
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/filter",
             handler: vi.fn().mockImplementation((req) => {
@@ -572,6 +590,7 @@ describe("HTTPRouter Response handling", () => {
 
     it("should handle requests with no URL", async () => {
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/",
             handler: vi.fn().mockResolvedValue({ ok: true }),
@@ -594,6 +613,7 @@ describe("HTTPRouter Response handling", () => {
 
     it("should handle requests with no method", async () => {
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/",
             handler: vi.fn().mockResolvedValue({ ok: true }),
@@ -624,6 +644,7 @@ describe("HTTPRouter Response handling", () => {
         });
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/response",
             handler: vi.fn().mockResolvedValue(mockResponse),
@@ -645,6 +666,7 @@ describe("HTTPRouter Response handling", () => {
         const mockResponse = new Response(null, { status: 204 });
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "DELETE",
             path: "/api/items/:id",
             handler: vi.fn().mockResolvedValue(mockResponse),
@@ -665,6 +687,7 @@ describe("HTTPRouter Response handling", () => {
         let capturedHeaders: Record<string, string | string[] | undefined> = {};
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/headers",
             handler: vi.fn().mockImplementation((req) => {
@@ -697,6 +720,7 @@ describe("HTTPRouter Response handling", () => {
         let parsedBody: unknown;
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "POST",
             path: "/api/json",
             handler: vi.fn().mockImplementation(async (req) => {
@@ -732,6 +756,7 @@ describe("HTTPRouter Response handling", () => {
         let textBody: string = "";
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "POST",
             path: "/api/text",
             handler: vi.fn().mockImplementation(async (req) => {
@@ -767,6 +792,7 @@ describe("HTTPRouter Response handling", () => {
         let formDataError: Error | undefined;
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "POST",
             path: "/api/form",
             handler: vi.fn().mockImplementation(async (req) => {
@@ -794,6 +820,7 @@ describe("HTTPRouter Response handling", () => {
         let webRequest: Request | undefined;
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "POST",
             path: "/api/web",
             handler: vi.fn().mockImplementation(async (req) => {
@@ -836,6 +863,7 @@ describe("HTTPRouter Response handling", () => {
         let webRequest: Request | undefined;
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/default",
             handler: vi.fn().mockImplementation(async (req) => {
@@ -865,6 +893,7 @@ describe("HTTPRouter Response handling", () => {
         let webRequest: Request | undefined;
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/array-headers",
             handler: vi.fn().mockImplementation(async (req) => {
@@ -897,6 +926,7 @@ describe("HTTPRouter Response handling", () => {
         let capturedCookies: Record<string, string> = {};
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/cookies",
             handler: vi.fn().mockImplementation((req) => {
@@ -929,6 +959,7 @@ describe("HTTPRouter Response handling", () => {
         let capturedCookies: Record<string, string> = {};
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "GET",
             path: "/api/no-cookies",
             handler: vi.fn().mockImplementation((req) => {
@@ -958,6 +989,7 @@ describe("HTTPRouter Response handling", () => {
         let textResult: string = "";
 
         const mockHandler: HeliumHTTPDef = {
+            __kind: "http",
             method: "POST",
             path: "/api/multi-read",
             handler: vi.fn().mockImplementation(async (req) => {

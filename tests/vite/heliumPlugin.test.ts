@@ -1,9 +1,9 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import fs from "fs";
 import path from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Import actual functions from source
-import { normalizeToPosix, isServerModule } from "../../src/vite/heliumPlugin";
+import { isServerModule, normalizeToPosix } from "../../src/vite/heliumPlugin";
 
 describe("heliumPlugin", () => {
     describe("normalizeToPosix", () => {
@@ -91,7 +91,7 @@ describe("heliumPlugin", () => {
         it("should watch for TypeScript config", () => {
             const configFiles = ["helium.config.ts", "helium.config.js", "helium.config.mjs"];
 
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 return p.toString().endsWith("helium.config.ts");
             });
 
@@ -102,7 +102,7 @@ describe("heliumPlugin", () => {
         it("should watch for JavaScript config", () => {
             const configFiles = ["helium.config.ts", "helium.config.js", "helium.config.mjs"];
 
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 return p.toString().endsWith("helium.config.js");
             });
 
@@ -113,7 +113,7 @@ describe("heliumPlugin", () => {
         it("should watch for ES module config", () => {
             const configFiles = ["helium.config.ts", "helium.config.js", "helium.config.mjs"];
 
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 return p.toString().endsWith("helium.config.mjs");
             });
 

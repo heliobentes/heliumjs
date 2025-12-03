@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import {
-    generateClientModule,
-    generateEntryModule,
-    generateServerManifest,
-    generateTypeDefinitions,
-} from "../../src/vite/virtualServerModule";
 import type { HTTPHandlerExport, MethodExport, MiddlewareExport, WorkerExport } from "../../src/vite/scanner";
+import { generateClientModule, generateEntryModule, generateServerManifest, generateTypeDefinitions } from "../../src/vite/virtualServerModule";
 
 describe("virtualServerModule", () => {
     describe("generateClientModule", () => {
@@ -31,9 +26,7 @@ describe("virtualServerModule", () => {
 
     describe("generateServerManifest", () => {
         it("should generate imports and registrations for methods", () => {
-            const methods: MethodExport[] = [
-                { name: "getUser", filePath: "/src/server/users.ts" },
-            ];
+            const methods: MethodExport[] = [{ name: "getUser", filePath: "/src/server/users.ts" }];
 
             const result = generateServerManifest(methods, [], undefined, []);
 
@@ -42,9 +35,7 @@ describe("virtualServerModule", () => {
         });
 
         it("should generate imports for HTTP handlers", () => {
-            const httpHandlers: HTTPHandlerExport[] = [
-                { name: "webhookHandler", filePath: "/src/server/webhooks.ts" },
-            ];
+            const httpHandlers: HTTPHandlerExport[] = [{ name: "webhookHandler", filePath: "/src/server/webhooks.ts" }];
 
             const result = generateServerManifest([], httpHandlers, undefined, []);
 
@@ -53,9 +44,7 @@ describe("virtualServerModule", () => {
         });
 
         it("should generate imports for workers", () => {
-            const workers: WorkerExport[] = [
-                { name: "queueWorker", filePath: "/src/server/workers/queue.ts" },
-            ];
+            const workers: WorkerExport[] = [{ name: "queueWorker", filePath: "/src/server/workers/queue.ts" }];
 
             const result = generateServerManifest([], [], undefined, workers);
 
@@ -95,9 +84,7 @@ describe("virtualServerModule", () => {
 
     describe("generateTypeDefinitions", () => {
         it("should generate type imports and exports", () => {
-            const methods: MethodExport[] = [
-                { name: "getUser", filePath: "/test/project/src/server/users.ts" },
-            ];
+            const methods: MethodExport[] = [{ name: "getUser", filePath: "/test/project/src/server/users.ts" }];
 
             const result = generateTypeDefinitions(methods, "/test/project");
 

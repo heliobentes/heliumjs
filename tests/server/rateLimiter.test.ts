@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type WebSocket from "ws";
 
 import { RateLimiter } from "../../src/server/rateLimiter";

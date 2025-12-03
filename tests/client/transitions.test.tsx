@@ -1,6 +1,9 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, renderHook, screen } from "@testing-library/react";
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useRouter } from "../../src/client/Router";
+import { PageTransition, type PageTransitionProps, useDeferredNavigation } from "../../src/client/transitions";
 
 // Mock the Router module to provide useRouter
 vi.mock("../../src/client/Router", () => ({
@@ -10,10 +13,6 @@ vi.mock("../../src/client/Router", () => ({
         isNavigating: false,
     })),
 }));
-
-import { useDeferredNavigation, PageTransition, type PageTransitionProps } from "../../src/client/transitions";
-import { useRouter } from "../../src/client/Router";
-import { renderHook } from "@testing-library/react";
 
 describe("transitions", () => {
     beforeEach(() => {

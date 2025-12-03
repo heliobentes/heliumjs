@@ -1,6 +1,9 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import React from "react";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { get, has, set, subscribeInvalidations } from "../../src/client/cache";
+import { rpcCall } from "../../src/client/rpcClient";
+import { useFetch } from "../../src/client/useFetch";
 
 // Mock rpcClient
 vi.mock("../../src/client/rpcClient", () => ({
@@ -16,10 +19,6 @@ vi.mock("../../src/client/cache", () => ({
     subscribeInvalidations: vi.fn(() => () => {}),
     invalidateAll: vi.fn(),
 }));
-
-import { rpcCall } from "../../src/client/rpcClient";
-import { cacheKey, get, has, set, subscribeInvalidations } from "../../src/client/cache";
-import { useFetch } from "../../src/client/useFetch";
 
 describe("useFetch", () => {
     const mockMethod = { __id: "testMethod" } as { __id: string };

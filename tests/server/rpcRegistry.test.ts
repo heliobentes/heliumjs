@@ -1,9 +1,9 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import type http from "http";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type WebSocket from "ws";
 
-import { RpcRegistry, type HttpRpcResult } from "../../src/server/rpcRegistry";
 import type { HeliumMethodDef } from "../../src/server/defineMethod";
+import { RpcRegistry } from "../../src/server/rpcRegistry";
 
 // Mock WebSocket
 function createMockSocket(): WebSocket & { sentMessages: Buffer[] } {
@@ -36,6 +36,8 @@ describe("RpcRegistry", () => {
     describe("register", () => {
         it("should register a method", () => {
             const method: HeliumMethodDef<{ id: number }, { name: string }> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue({ name: "Test" }),
             };
 
@@ -47,6 +49,8 @@ describe("RpcRegistry", () => {
 
         it("should set __id on the method definition", () => {
             const method: HeliumMethodDef<unknown, unknown> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn(),
             };
 
@@ -70,6 +74,8 @@ describe("RpcRegistry", () => {
     describe("handleHttpRequest", () => {
         it("should process a single RPC request", async () => {
             const method: HeliumMethodDef<{ id: number }, { name: string }> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue({ name: "John" }),
             };
             registry.register("getUser", method);
@@ -91,9 +97,13 @@ describe("RpcRegistry", () => {
 
         it("should process batch RPC requests", async () => {
             const method1: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result1"),
             };
             const method2: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result2"),
             };
 
@@ -132,6 +142,8 @@ describe("RpcRegistry", () => {
 
         it("should return error for handler exceptions", async () => {
             const method: HeliumMethodDef<unknown, unknown> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockRejectedValue(new Error("Handler failed")),
             };
             registry.register("failingMethod", method);
@@ -164,6 +176,8 @@ describe("RpcRegistry", () => {
             const middlewareCalls: string[] = [];
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockImplementation(() => {
                     middlewareCalls.push("handler");
                     return "result";
@@ -172,6 +186,7 @@ describe("RpcRegistry", () => {
             registry.register("testMethod", method);
 
             registry.setMiddleware({
+                __kind: "middleware",
                 handler: async (ctx, next) => {
                     middlewareCalls.push("middleware-before");
                     await next();
@@ -190,11 +205,14 @@ describe("RpcRegistry", () => {
 
         it("should block request if middleware does not call next", async () => {
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result"),
             };
             registry.register("blockedMethod", method);
 
             registry.setMiddleware({
+                __kind: "middleware",
                 handler: async () => {
                     // Does not call next()
                 },
@@ -223,6 +241,8 @@ describe("RpcRegistry", () => {
             };
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result"),
             };
             registry.register("limitedMethod", method);
@@ -248,6 +268,8 @@ describe("RpcRegistry", () => {
             let capturedCtx: unknown;
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockImplementation((args, ctx) => {
                     capturedCtx = ctx;
                     return "result";
@@ -277,6 +299,8 @@ describe("RpcRegistry", () => {
     describe("handleMessage (WebSocket)", () => {
         it("should process a single WebSocket RPC request", async () => {
             const method: HeliumMethodDef<{ id: number }, { name: string }> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue({ name: "WebSocket User" }),
             };
             registry.register("wsGetUser", method);
@@ -296,9 +320,13 @@ describe("RpcRegistry", () => {
 
         it("should process batch WebSocket RPC requests", async () => {
             const method1: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("ws-result1"),
             };
             const method2: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("ws-result2"),
             };
 
@@ -344,6 +372,8 @@ describe("RpcRegistry", () => {
 
         it("should handle WebSocket handler exceptions", async () => {
             const method: HeliumMethodDef<unknown, unknown> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockRejectedValue(new Error("WebSocket handler failed")),
             };
             registry.register("wsFailingMethod", method);
@@ -378,6 +408,8 @@ describe("RpcRegistry", () => {
             let capturedCtx: unknown;
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockImplementation((args, ctx) => {
                     capturedCtx = ctx;
                     return "result";
@@ -407,6 +439,8 @@ describe("RpcRegistry", () => {
             let capturedCtx: unknown;
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockImplementation((args, ctx) => {
                     capturedCtx = ctx;
                     return "result";
@@ -430,6 +464,8 @@ describe("RpcRegistry", () => {
             const middlewareCalls: string[] = [];
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockImplementation(() => {
                     middlewareCalls.push("handler");
                     return "result";
@@ -438,6 +474,7 @@ describe("RpcRegistry", () => {
             registry.register("wsMiddlewareMethod", method);
 
             registry.setMiddleware({
+                __kind: "middleware",
                 handler: async (ctx, next) => {
                     middlewareCalls.push("middleware-before");
                     await next();
@@ -459,11 +496,14 @@ describe("RpcRegistry", () => {
 
         it("should block WebSocket request if middleware does not call next", async () => {
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result"),
             };
             registry.register("wsBlockedMethod", method);
 
             registry.setMiddleware({
+                __kind: "middleware",
                 handler: async () => {
                     // Does not call next()
                 },
@@ -496,6 +536,8 @@ describe("RpcRegistry", () => {
             };
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result"),
             };
             registry.register("wsRateLimitedMethod", method);
@@ -523,6 +565,8 @@ describe("RpcRegistry", () => {
             };
 
             const method: HeliumMethodDef<unknown, string> = {
+                __kind: "method",
+                __id: "",
                 handler: vi.fn().mockResolvedValue("result"),
             };
             registry.register("noStatsMethod", method);

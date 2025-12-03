@@ -1,6 +1,6 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import fs from "fs";
 import path from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Note: prodServer.ts is a highly integrated module that creates HTTP and WebSocket servers.
 // Full integration testing would require complex mocking that can become fragile.
@@ -60,15 +60,7 @@ describe("prodServer", () => {
     });
 
     describe("blocked files logic", () => {
-        const blockedFiles = [
-            "helium.config.js",
-            "helium.config.mjs",
-            "helium.config.ts",
-            "server.js",
-            ".env",
-            ".env.local",
-            ".env.production",
-        ];
+        const blockedFiles = ["helium.config.js", "helium.config.mjs", "helium.config.ts", "server.js", ".env", ".env.local", ".env.production"];
 
         it("should block helium.config.js", () => {
             expect(blockedFiles.includes("helium.config.js")).toBe(true);
@@ -99,9 +91,7 @@ describe("prodServer", () => {
 
         it("should match .env prefixed files", () => {
             const testFile = ".env.custom";
-            const isBlocked = blockedFiles.some(
-                (blocked) => testFile === blocked || testFile.startsWith(".env")
-            );
+            const isBlocked = blockedFiles.some((blocked) => testFile === blocked || testFile.startsWith(".env"));
             expect(isBlocked).toBe(true);
         });
     });
@@ -166,7 +156,7 @@ describe("prodServer", () => {
         }
 
         it("should resolve root to index.ssg.html if it exists", () => {
-            existsSyncSpy.mockImplementation((p) => p.toString().includes("index.ssg.html"));
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => p.toString().includes("index.ssg.html"));
             const result = resolveFilePath("/");
             expect(result).toBe("/dist/index.ssg.html");
         });
@@ -178,7 +168,7 @@ describe("prodServer", () => {
         });
 
         it("should resolve /about to /about.html if it exists (SSG)", () => {
-            existsSyncSpy.mockImplementation((p) => p.toString().endsWith("about.html"));
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => p.toString().endsWith("about.html"));
             const result = resolveFilePath("/about");
             expect(result).toBe("/dist/about.html");
         });
@@ -256,6 +246,3 @@ describe("prodServer", () => {
         });
     });
 });
-
-// Import necessary functions for additional tests
-import { afterEach } from "vitest";

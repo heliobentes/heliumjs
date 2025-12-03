@@ -1,12 +1,6 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-    buildRoutes,
-    pathFromFile,
-    createMatcher,
-    type RouteEntry,
-    type LayoutProps,
-} from "../../src/client/routerManifest";
+import { buildRoutes, createMatcher, type LayoutProps, pathFromFile, type RouteEntry } from "../../src/client/routerManifest";
 
 describe("routerManifest", () => {
     describe("buildRoutes", () => {

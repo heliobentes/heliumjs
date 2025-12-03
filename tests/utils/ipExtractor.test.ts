@@ -1,5 +1,5 @@
 import type http from "http";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { extractClientIP, extractClientIPFromRight } from "../../src/utils/ipExtractor";
 

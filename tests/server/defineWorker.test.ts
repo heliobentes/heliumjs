@@ -1,15 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-    defineWorker,
-    getWorkerById,
-    getWorkerStatus,
-    startWorker,
-    stopAllWorkers,
-    stopWorker,
-    type HeliumWorkerDef,
-} from "../../src/server/defineWorker";
 import type { HeliumContext } from "../../src/server/context";
+import { defineWorker, getWorkerById, getWorkerStatus, startWorker, stopAllWorkers, stopWorker } from "../../src/server/defineWorker";
 
 describe("defineWorker", () => {
     beforeEach(() => {
@@ -27,7 +19,7 @@ describe("defineWorker", () => {
 
     describe("defineWorker function", () => {
         it("should create a worker definition with default options", () => {
-            const handler = async (ctx: HeliumContext) => {
+            const handler = async (_ctx: HeliumContext) => {
                 // Worker logic
             };
 
@@ -49,7 +41,7 @@ describe("defineWorker", () => {
         });
 
         it("should use handler function name when name not provided", () => {
-            async function namedWorkerHandler(ctx: HeliumContext) {}
+            async function namedWorkerHandler(_ctx: HeliumContext) {}
 
             const worker = defineWorker(namedWorkerHandler);
 
@@ -78,18 +70,16 @@ describe("defineWorker", () => {
         });
 
         it("should throw when handler is not provided", () => {
-            expect(() => defineWorker(null as unknown as (ctx: HeliumContext) => Promise<void>)).toThrow(
-                "defineWorker requires a handler"
-            );
+            expect(() => defineWorker(null as unknown as (ctx: HeliumContext) => Promise<void>)).toThrow("defineWorker requires a handler");
         });
     });
 
     describe("startWorker", () => {
         it("should start a worker and return instance", async () => {
-            let executed = false;
+            let _executed = false;
             const worker = defineWorker(
-                async (ctx) => {
-                    executed = true;
+                async (_ctx) => {
+                    _executed = true;
                 },
                 { name: "testWorker" }
             );
@@ -112,9 +102,12 @@ describe("defineWorker", () => {
         });
 
         it("should return existing instance if worker already running", async () => {
-            const worker = defineWorker(async (ctx) => {
-                await new Promise(() => {}); // Never resolves
-            }, { name: "longRunningWorker" });
+            const worker = defineWorker(
+                async (_ctx) => {
+                    await new Promise(() => {}); // Never resolves
+                },
+                { name: "longRunningWorker" }
+            );
 
             const createContext = (): HeliumContext => ({
                 req: { ip: "127.0.0.1", headers: {}, raw: {} as HeliumContext["req"]["raw"] },
@@ -129,7 +122,7 @@ describe("defineWorker", () => {
         it("should track restart count on crash", async () => {
             let attempts = 0;
             const worker = defineWorker(
-                async (ctx) => {
+                async (_ctx) => {
                     attempts++;
                     if (attempts < 3) {
                         throw new Error("Simulated crash");
@@ -142,7 +135,7 @@ describe("defineWorker", () => {
                 req: { ip: "127.0.0.1", headers: {}, raw: {} as HeliumContext["req"]["raw"] },
             });
 
-            const instance = await startWorker(worker, createContext);
+            const _instance = await startWorker(worker, createContext);
 
             // First execution - crashes
             await vi.advanceTimersByTimeAsync(0);
@@ -161,9 +154,12 @@ describe("defineWorker", () => {
 
     describe("stopWorker", () => {
         it("should stop a running worker", async () => {
-            const worker = defineWorker(async (ctx) => {
-                await new Promise(() => {}); // Never resolves
-            }, { name: "stoppableWorker" });
+            const worker = defineWorker(
+                async (_ctx) => {
+                    await new Promise(() => {}); // Never resolves
+                },
+                { name: "stoppableWorker" }
+            );
 
             const createContext = (): HeliumContext => ({
                 req: { ip: "127.0.0.1", headers: {}, raw: {} as HeliumContext["req"]["raw"] },
@@ -186,13 +182,19 @@ describe("defineWorker", () => {
 
     describe("stopAllWorkers", () => {
         it("should stop all running workers", async () => {
-            const worker1 = defineWorker(async () => {
-                await new Promise(() => {});
-            }, { name: "worker1" });
+            const worker1 = defineWorker(
+                async () => {
+                    await new Promise(() => {});
+                },
+                { name: "worker1" }
+            );
 
-            const worker2 = defineWorker(async () => {
-                await new Promise(() => {});
-            }, { name: "worker2" });
+            const worker2 = defineWorker(
+                async () => {
+                    await new Promise(() => {});
+                },
+                { name: "worker2" }
+            );
 
             const createContext = (): HeliumContext => ({
                 req: { ip: "127.0.0.1", headers: {}, raw: {} as HeliumContext["req"]["raw"] },
@@ -215,9 +217,12 @@ describe("defineWorker", () => {
         });
 
         it("should return all worker instances", async () => {
-            const worker = defineWorker(async () => {
-                await new Promise(() => {});
-            }, { name: "statusWorker" });
+            const worker = defineWorker(
+                async () => {
+                    await new Promise(() => {});
+                },
+                { name: "statusWorker" }
+            );
 
             const createContext = (): HeliumContext => ({
                 req: { ip: "127.0.0.1", headers: {}, raw: {} as HeliumContext["req"]["raw"] },
@@ -239,9 +244,12 @@ describe("defineWorker", () => {
         });
 
         it("should return worker instance by name", async () => {
-            const worker = defineWorker(async () => {
-                await new Promise(() => {});
-            }, { name: "findableWorker" });
+            const worker = defineWorker(
+                async () => {
+                    await new Promise(() => {});
+                },
+                { name: "findableWorker" }
+            );
 
             const createContext = (): HeliumContext => ({
                 req: { ip: "127.0.0.1", headers: {}, raw: {} as HeliumContext["req"]["raw"] },
@@ -260,7 +268,7 @@ describe("defineWorker", () => {
         it("should stop after max restarts exceeded", async () => {
             let attempts = 0;
             const worker = defineWorker(
-                async (ctx) => {
+                async (_ctx) => {
                     attempts++;
                     throw new Error("Always fails");
                 },

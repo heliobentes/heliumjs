@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { defineMethod, type HeliumMethodDef } from "../../src/server/defineMethod";
 import type { HeliumContext } from "../../src/server/context";
+import { defineMethod, type HeliumMethodDef } from "../../src/server/defineMethod";
 
 describe("defineMethod", () => {
     describe("defineMethod function", () => {
         it("should create a method definition from a handler", () => {
-            const handler = async (args: { name: string }, ctx: HeliumContext) => {
+            const handler = async (args: { name: string }, _ctx: HeliumContext) => {
                 return { greeting: `Hello, ${args.name}!` };
             };
 
@@ -17,7 +17,7 @@ describe("defineMethod", () => {
         });
 
         it("should set __id from handler function name", () => {
-            function namedHandler(args: unknown, ctx: HeliumContext) {
+            function namedHandler(_args: unknown, _ctx: HeliumContext) {
                 return "result";
             }
 
@@ -27,15 +27,13 @@ describe("defineMethod", () => {
         });
 
         it("should use empty string for anonymous handlers", () => {
-            const method = defineMethod((args: unknown, ctx: HeliumContext) => "result");
+            const method = defineMethod((_args: unknown, _ctx: HeliumContext) => "result");
 
             expect(method.__id).toBe("");
         });
 
         it("should throw when handler is not provided", () => {
-            expect(() => defineMethod(null as unknown as (args: unknown, ctx: HeliumContext) => unknown)).toThrow(
-                "defineMethod requires a handler"
-            );
+            expect(() => defineMethod(null as unknown as (args: unknown, ctx: HeliumContext) => unknown)).toThrow("defineMethod requires a handler");
         });
 
         it("should preserve handler types", () => {
@@ -46,17 +44,15 @@ describe("defineMethod", () => {
                 user: { id: number; name: string };
             }
 
-            const method: HeliumMethodDef<Args, Result> = defineMethod(
-                async (args: Args, ctx: HeliumContext): Promise<Result> => {
-                    return { user: { id: args.userId, name: "Test" } };
-                }
-            );
+            const method: HeliumMethodDef<Args, Result> = defineMethod(async (args: Args, _ctx: HeliumContext): Promise<Result> => {
+                return { user: { id: args.userId, name: "Test" } };
+            });
 
             expect(method.__kind).toBe("method");
         });
 
         it("should allow synchronous handlers", () => {
-            const method = defineMethod((args: { x: number }, ctx: HeliumContext) => {
+            const method = defineMethod((args: { x: number }, _ctx: HeliumContext) => {
                 return args.x * 2;
             });
 
@@ -64,7 +60,7 @@ describe("defineMethod", () => {
         });
 
         it("should allow async handlers", async () => {
-            const method = defineMethod(async (args: { delay: number }, ctx: HeliumContext) => {
+            const method = defineMethod(async (args: { delay: number }, _ctx: HeliumContext) => {
                 await new Promise((resolve) => setTimeout(resolve, args.delay));
                 return "done";
             });

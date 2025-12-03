@@ -1,14 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-    cacheKey,
-    get,
-    has,
-    invalidateAll,
-    invalidateByMethod,
-    set,
-    subscribeInvalidations,
-} from "../../src/client/cache";
+import { cacheKey, get, has, invalidateAll, invalidateByMethod, set, subscribeInvalidations } from "../../src/client/cache";
 
 describe("cache", () => {
     beforeEach(() => {

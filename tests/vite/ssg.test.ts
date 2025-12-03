@@ -1,15 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import fs from "fs";
-import path from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Import actual functions from source
-import {
-    filePathToUrlPath,
-    urlPathToOutputPath,
-    stripStringLiterals,
-    findLayoutPathsForPage,
-    scanSSGPages,
-} from "../../src/vite/ssg";
+import { filePathToUrlPath, findLayoutPathsForPage, scanSSGPages, stripStringLiterals, urlPathToOutputPath } from "../../src/vite/ssg";
 
 describe("ssg", () => {
     describe("filePathToUrlPath", () => {
@@ -84,10 +77,7 @@ describe("ssg", () => {
 
     describe("validateSSGPage hook detection", () => {
         // These patterns are used internally by validateSSGPage
-        const hookPatterns = [
-            /\buse(State|Effect|Context|Reducer|Callback|Memo|Ref|ImperativeHandle|LayoutEffect|DebugValue)\s*\(/,
-            /\buse[A-Z]\w+\s*\(/,
-        ];
+        const hookPatterns = [/\buse(State|Effect|Context|Reducer|Callback|Memo|Ref|ImperativeHandle|LayoutEffect|DebugValue)\s*\(/, /\buse[A-Z]\w+\s*\(/];
 
         function detectHooks(content: string): boolean {
             return hookPatterns.some((pattern) => pattern.test(content));
@@ -155,12 +145,12 @@ describe("ssg", () => {
         });
 
         it("should scan pages with use ssg directive", () => {
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pathStr = p.toString();
                 return pathStr.includes("pages") || pathStr.endsWith("about.tsx");
             });
 
-            readdirSyncSpy.mockImplementation((p) => {
+            readdirSyncSpy.mockImplementation((p: fs.PathLike) => {
                 if (p.toString().endsWith("pages")) {
                     return ["about.tsx"] as unknown as fs.Dirent[];
                 }
@@ -192,7 +182,7 @@ describe("ssg", () => {
         });
 
         it("should find root layout", () => {
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 return p.toString().endsWith("_layout.tsx") && p.toString().includes("pages");
             });
 
@@ -202,7 +192,7 @@ describe("ssg", () => {
         });
 
         it("should find nested layouts", () => {
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const str = p.toString();
                 return str.endsWith("_layout.tsx");
             });

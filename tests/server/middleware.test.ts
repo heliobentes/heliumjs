@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { defineMiddleware, middleware, type HeliumMiddleware, type MiddlewareContext } from "../../src/server/middleware";
+import { defineMiddleware, middleware, type MiddlewareContext } from "../../src/server/middleware";
 
 describe("middleware", () => {
     describe("middleware function", () => {
@@ -16,9 +16,7 @@ describe("middleware", () => {
         });
 
         it("should throw when handler is not provided", () => {
-            expect(() => middleware(null as unknown as (ctx: MiddlewareContext, next: () => Promise<void>) => void)).toThrow(
-                "middleware requires a handler"
-            );
+            expect(() => middleware(null as unknown as (ctx: MiddlewareContext, next: () => Promise<void>) => void)).toThrow("middleware requires a handler");
         });
 
         it("should allow middleware to call next()", async () => {
@@ -44,7 +42,7 @@ describe("middleware", () => {
         it("should allow middleware to block by not calling next()", async () => {
             let handlerExecuted = false;
 
-            const mw = middleware(async (context, next) => {
+            const mw = middleware(async (_context, _next) => {
                 // Don't call next() - blocking the request
                 return;
             });

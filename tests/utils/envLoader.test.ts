@@ -38,7 +38,7 @@ describe("envLoader", () => {
         it("should load .env file when it exists", () => {
             const mockCwd = "/test/project";
             vi.spyOn(process, "cwd").mockReturnValue(mockCwd);
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 return p === path.resolve(mockCwd, ".env");
             });
             readFileSyncSpy.mockReturnValue("TEST_VAR=test_value");
@@ -50,7 +50,7 @@ describe("envLoader", () => {
 
         it("should load mode-specific env file", () => {
             const mockCwd = "/test/project";
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 return p === path.resolve(mockCwd, ".env.production");
             });
             readFileSyncSpy.mockReturnValue("PROD_VAR=prod_value");
@@ -63,7 +63,7 @@ describe("envLoader", () => {
         it("should not load .env.local in test mode", () => {
             const mockCwd = "/test/project";
             const existsCalls: string[] = [];
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 existsCalls.push(p as string);
                 return false;
             });
@@ -75,11 +75,11 @@ describe("envLoader", () => {
 
         it("should override values from earlier files with later ones", () => {
             const mockCwd = "/test/project";
-            existsSyncSpy.mockImplementation((p) => {
+            existsSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p as string;
                 return pStr.endsWith(".env") || pStr.endsWith(".env.development");
             });
-            readFileSyncSpy.mockImplementation((p) => {
+            readFileSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p as string;
                 if (pStr.endsWith(".env.development")) {
                     return "VAR=development_value";

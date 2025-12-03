@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { defineHTTPRequest, type HeliumHTTPDef, type HTTPMethod, type HTTPRequest } from "../../src/server/defineHTTPRequest";
 import type { HeliumContext } from "../../src/server/context";
+import { defineHTTPRequest, type HTTPMethod, type HTTPRequest } from "../../src/server/defineHTTPRequest";
 
 describe("defineHTTPRequest", () => {
     describe("defineHTTPRequest function", () => {
         it("should create an HTTP handler definition for GET", () => {
-            const handler = defineHTTPRequest("GET", "/api/users", async (req, ctx) => {
+            const handler = defineHTTPRequest("GET", "/api/users", async (_req, _ctx) => {
                 return { users: [] };
             });
 
@@ -16,8 +16,8 @@ describe("defineHTTPRequest", () => {
         });
 
         it("should create an HTTP handler definition for POST", () => {
-            const handler = defineHTTPRequest("POST", "/api/users", async (req, ctx) => {
-                const body = await req.json();
+            const handler = defineHTTPRequest("POST", "/api/users", async (req, _ctx) => {
+                const _body = await req.json();
                 return { created: true };
             });
 
@@ -30,31 +30,27 @@ describe("defineHTTPRequest", () => {
             const methods: HTTPMethod[] = ["GET", "POST", "PUT", "DELETE", "PATCH", "ALL"];
 
             for (const method of methods) {
-                const handler = defineHTTPRequest(method, "/test", async (req, ctx) => ({}));
+                const handler = defineHTTPRequest(method, "/test", async (_req, _ctx) => ({}));
                 expect(handler.method).toBe(method);
             }
         });
 
         it("should throw when method is not provided", () => {
-            expect(() =>
-                defineHTTPRequest("" as HTTPMethod, "/path", async (req, ctx) => ({}))
-            ).toThrow("defineHTTPRequest requires a method");
+            expect(() => defineHTTPRequest("" as HTTPMethod, "/path", async (_req, _ctx) => ({}))).toThrow("defineHTTPRequest requires a method");
         });
 
         it("should throw when path is not provided", () => {
-            expect(() =>
-                defineHTTPRequest("GET", "", async (req, ctx) => ({}))
-            ).toThrow("defineHTTPRequest requires a path");
+            expect(() => defineHTTPRequest("GET", "", async (_req, _ctx) => ({}))).toThrow("defineHTTPRequest requires a path");
         });
 
         it("should throw when handler is not provided", () => {
-            expect(() =>
-                defineHTTPRequest("GET", "/path", null as unknown as (req: HTTPRequest, ctx: HeliumContext) => Promise<unknown>)
-            ).toThrow("defineHTTPRequest requires a handler");
+            expect(() => defineHTTPRequest("GET", "/path", null as unknown as (req: HTTPRequest, ctx: HeliumContext) => Promise<unknown>)).toThrow(
+                "defineHTTPRequest requires a handler"
+            );
         });
 
         it("should support dynamic path parameters", () => {
-            const handler = defineHTTPRequest("GET", "/api/users/:id", async (req, ctx) => {
+            const handler = defineHTTPRequest("GET", "/api/users/:id", async (req, _ctx) => {
                 const userId = req.params.id;
                 return { userId };
             });
@@ -63,7 +59,7 @@ describe("defineHTTPRequest", () => {
         });
 
         it("should support multiple path parameters", () => {
-            const handler = defineHTTPRequest("GET", "/api/orgs/:orgId/users/:userId", async (req, ctx) => {
+            const handler = defineHTTPRequest("GET", "/api/orgs/:orgId/users/:userId", async (req, _ctx) => {
                 return {
                     orgId: req.params.orgId,
                     userId: req.params.userId,
@@ -74,7 +70,7 @@ describe("defineHTTPRequest", () => {
         });
 
         it("should preserve handler reference", () => {
-            const handlerFn = async (req: HTTPRequest, ctx: HeliumContext) => {
+            const handlerFn = async (_req: HTTPRequest, _ctx: HeliumContext) => {
                 return { success: true };
             };
 
@@ -84,7 +80,7 @@ describe("defineHTTPRequest", () => {
         });
 
         it("should support synchronous handlers", () => {
-            const handler = defineHTTPRequest("GET", "/sync", (req, ctx) => {
+            const handler = defineHTTPRequest("GET", "/sync", (_req, _ctx) => {
                 return { sync: true };
             });
 
@@ -92,7 +88,7 @@ describe("defineHTTPRequest", () => {
         });
 
         it("should allow accessing request properties in handler", async () => {
-            const handler = defineHTTPRequest("POST", "/api/data", async (req, ctx) => {
+            const handler = defineHTTPRequest("POST", "/api/data", async (req, _ctx) => {
                 return {
                     method: req.method,
                     path: req.path,

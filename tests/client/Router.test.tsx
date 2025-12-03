@@ -1,6 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import React from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { AppRouter, Link, Redirect, RouterContext, useRouter } from "../../src/client/Router";
 
 // Mock routerManifest
 vi.mock("../../src/client/routerManifest", () => ({
@@ -43,8 +45,6 @@ vi.mock("../../src/client/routerManifest", () => ({
 vi.mock("../../src/client/prefetch", () => ({
     prefetchRoute: vi.fn(),
 }));
-
-import { AppRouter, Link, Redirect, useRouter, RouterContext } from "../../src/client/Router";
 
 describe("Router", () => {
     beforeEach(() => {
@@ -419,7 +419,7 @@ describe("Router", () => {
 
     describe("Link prefetching", () => {
         it("should prefetch on mouse enter", async () => {
-            const { prefetchRoute } = await import("../../src/client/prefetch");
+            const { prefetchRoute: _prefetchRoute } = await import("../../src/client/prefetch");
 
             render(
                 <RouterContext.Provider

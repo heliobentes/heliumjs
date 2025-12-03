@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { getRpcTransport, isAutoHttpOnMobileEnabled, preconnect, type RpcResult, type RpcTransport } from "../../src/client/rpcClient";
 

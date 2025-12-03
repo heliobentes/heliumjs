@@ -48,12 +48,7 @@ describe("serializer", () => {
         });
 
         it("should process arrays recursively", () => {
-            const arr = [
-                1,
-                "string",
-                new Date("2024-01-15"),
-                { toJSON: () => ({ processed: true }) },
-            ];
+            const arr = [1, "string", new Date("2024-01-15"), { toJSON: () => ({ processed: true }) }];
 
             const result = prepareForMsgpack(arr);
 
@@ -122,8 +117,20 @@ describe("serializer", () => {
 
         it("should handle array of objects with toJSON", () => {
             const users = [
-                { name: "Alice", secret: "a", toJSON: function() { return { name: this.name }; } },
-                { name: "Bob", secret: "b", toJSON: function() { return { name: this.name }; } },
+                {
+                    name: "Alice",
+                    secret: "a",
+                    toJSON: function () {
+                        return { name: this.name };
+                    },
+                },
+                {
+                    name: "Bob",
+                    secret: "b",
+                    toJSON: function () {
+                        return { name: this.name };
+                    },
+                },
             ];
 
             const result = prepareForMsgpack(users);

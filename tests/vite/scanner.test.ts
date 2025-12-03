@@ -1,8 +1,7 @@
 import fs from "fs";
-import path from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { scanServerExports, scanServerMethods, scanPageRoutes, checkRouteCollisions, type ServerExports } from "../../src/vite/scanner";
+import { checkRouteCollisions, scanPageRoutes, scanServerExports, scanServerMethods } from "../../src/vite/scanner";
 
 describe("scanner", () => {
     let existsSyncSpy: ReturnType<typeof vi.spyOn>;
@@ -131,13 +130,13 @@ describe("scanner", () => {
 
         it("should scan nested directories", () => {
             existsSyncSpy.mockReturnValue(true);
-            readdirSyncSpy.mockImplementation((dir) => {
+            readdirSyncSpy.mockImplementation((dir: fs.PathLike) => {
                 if (dir.toString().endsWith("server")) {
                     return ["nested"] as unknown as fs.Dirent[];
                 }
                 return ["users.ts"] as unknown as fs.Dirent[];
             });
-            statSyncSpy.mockImplementation((p) => {
+            statSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p.toString();
                 return {
                     isDirectory: () => pStr.endsWith("nested"),
@@ -183,7 +182,7 @@ describe("scanner", () => {
             existsSyncSpy.mockReturnValue(true);
 
             // Set up directory structure: about.tsx and about/index.tsx both resolve to /about
-            readdirSyncSpy.mockImplementation((dir) => {
+            readdirSyncSpy.mockImplementation((dir: fs.PathLike) => {
                 const dirStr = dir.toString();
                 if (dirStr.endsWith("/pages")) {
                     return ["about.tsx", "about"] as unknown as fs.Dirent[];
@@ -194,7 +193,7 @@ describe("scanner", () => {
                 return [] as unknown as fs.Dirent[];
             });
 
-            statSyncSpy.mockImplementation((p) => {
+            statSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p.toString();
                 return {
                     isDirectory: () => pStr.endsWith("/about") && !pStr.includes(".tsx"),
@@ -213,7 +212,7 @@ describe("scanner", () => {
             existsSyncSpy.mockReturnValue(true);
 
             // Set up: about.tsx, about/index.tsx, and about/page.tsx all potentially conflicting
-            readdirSyncSpy.mockImplementation((dir) => {
+            readdirSyncSpy.mockImplementation((dir: fs.PathLike) => {
                 const dirStr = dir.toString();
                 if (dirStr.endsWith("/pages")) {
                     return ["about.tsx", "about"] as unknown as fs.Dirent[];
@@ -224,7 +223,7 @@ describe("scanner", () => {
                 return [] as unknown as fs.Dirent[];
             });
 
-            statSyncSpy.mockImplementation((p) => {
+            statSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p.toString();
                 return {
                     isDirectory: () => pStr.endsWith("/about") && !pStr.includes(".tsx"),
@@ -273,7 +272,7 @@ describe("scanner", () => {
         it("should handle nested dynamic routes", () => {
             existsSyncSpy.mockReturnValue(true);
 
-            readdirSyncSpy.mockImplementation((dir) => {
+            readdirSyncSpy.mockImplementation((dir: fs.PathLike) => {
                 const dirStr = dir.toString();
                 if (dirStr.endsWith("/pages")) {
                     return ["users"] as unknown as fs.Dirent[];
@@ -290,7 +289,7 @@ describe("scanner", () => {
                 return [] as unknown as fs.Dirent[];
             });
 
-            statSyncSpy.mockImplementation((p) => {
+            statSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p.toString();
                 return {
                     isDirectory: () => !pStr.endsWith(".tsx"),
@@ -329,7 +328,7 @@ describe("scanner", () => {
         it("should return true and log warnings when collisions exist", () => {
             existsSyncSpy.mockReturnValue(true);
 
-            readdirSyncSpy.mockImplementation((dir) => {
+            readdirSyncSpy.mockImplementation((dir: fs.PathLike) => {
                 const dirStr = dir.toString();
                 if (dirStr.endsWith("/pages")) {
                     return ["about.tsx", "about"] as unknown as fs.Dirent[];
@@ -340,7 +339,7 @@ describe("scanner", () => {
                 return [] as unknown as fs.Dirent[];
             });
 
-            statSyncSpy.mockImplementation((p) => {
+            statSyncSpy.mockImplementation((p: fs.PathLike) => {
                 const pStr = p.toString();
                 return {
                     isDirectory: () => pStr.endsWith("/about") && !pStr.includes(".tsx"),

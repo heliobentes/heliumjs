@@ -1,6 +1,9 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import React from "react";
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { invalidateByMethod } from "../../src/client/cache";
+import { rpcCall } from "../../src/client/rpcClient";
+import { useCall } from "../../src/client/useCall";
 
 // Mock rpcClient
 vi.mock("../../src/client/rpcClient", () => ({
@@ -11,10 +14,6 @@ vi.mock("../../src/client/rpcClient", () => ({
 vi.mock("../../src/client/cache", () => ({
     invalidateByMethod: vi.fn(),
 }));
-
-import { rpcCall } from "../../src/client/rpcClient";
-import { invalidateByMethod } from "../../src/client/cache";
-import { useCall } from "../../src/client/useCall";
 
 describe("useCall", () => {
     const mockMethod = { __id: "testMethod" } as { __id: string };

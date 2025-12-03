@@ -1,6 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import fs from "fs";
-import path from "path";
+import { describe, expect, it } from "vitest";
 
 // Note: devServer.ts is a highly integrated module that attaches to Vite's dev server.
 // Full integration testing would require complex mocking that can become fragile.
@@ -36,7 +34,8 @@ describe("devServer", () => {
 
         it("should accept named workers", () => {
             const workerName = "myWorker";
-            expect(workerName !== "anonymous").toBe(true);
+            expect(workerName.length).toBeGreaterThan(0);
+            expect(workerName).toBe("myWorker");
         });
     });
 
