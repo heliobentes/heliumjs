@@ -11,6 +11,9 @@ import { extractClientIP } from "../utils/ipExtractor.js";
 import { log } from "../utils/logger.js";
 import type { HeliumConfig } from "./config.js";
 import { getRpcConfig, getRpcSecurityConfig, getTrustProxyDepth } from "./config.js";
+import type { HeliumContext } from "./context.js";
+import type { HeliumWorkerDef } from "./defineWorker.js";
+import { startWorker, stopAllWorkers } from "./defineWorker.js";
 import { HTTPRouter } from "./httpRouter.js";
 import { RateLimiter } from "./rateLimiter.js";
 import { RpcRegistry } from "./rpcRegistry.js";
@@ -21,12 +24,18 @@ const gzipAsync = promisify(gzip);
 const deflateAsync = promisify(deflate);
 const brotliCompressAsync = promisify(brotliCompress);
 
+interface WorkerEntry {
+    name: string;
+    worker: HeliumWorkerDef;
+}
+
 interface ProdServerOptions {
     port?: number;
     distDir?: string;
     staticDir?: string;
     registerHandlers: (registry: RpcRegistry, httpRouter: HTTPRouter) => void;
     config?: HeliumConfig;
+    workers?: WorkerEntry[];
 }
 
 /**
@@ -36,6 +45,7 @@ interface ProdServerOptions {
  * - Falls back to index.html for client-side routing (SPA)
  * - Handles custom HTTP endpoints (webhooks, auth, etc.)
  * - Hosts WebSocket RPC server
+ * - Starts background workers
  *
  * SSG Behavior:
  * - Production correctly serves SSG pages (e.g., /about serves about.html with pre-rendered content)
@@ -43,7 +53,7 @@ interface ProdServerOptions {
  * - Client-side navigation between pages still works via React Router
  */
 export function startProdServer(options: ProdServerOptions) {
-    const { port = Number(process.env.PORT || 3000), distDir = "dist", staticDir = path.resolve(process.cwd(), distDir), registerHandlers, config = {} } = options;
+    const { port = Number(process.env.PORT || 3000), distDir = "dist", staticDir = path.resolve(process.cwd(), distDir), registerHandlers, config = {}, workers = [] } = options;
 
     // Load configuration
     const trustProxyDepth = getTrustProxyDepth(config);
@@ -247,7 +257,7 @@ export function startProdServer(options: ProdServerOptions) {
             return;
         }
 
-        socket.on("message", (msg: WebSocket.RawData, isBinary: boolean) => {
+        socket.on("message", (msg: WebSocket.RawData, _isBinary: boolean) => {
             // Check rate limit
             if (!rateLimiter.checkRateLimit(socket)) {
                 // Parse request to get the ID for proper error response
@@ -330,7 +340,47 @@ export function startProdServer(options: ProdServerOptions) {
         log("info", `Production server listening on http://localhost:${port}`);
         log("info", `Serving static files from ${staticDir}`);
         log("info", `WebSocket RPC available at ws://localhost:${port}/rpc`);
+
+        // Start workers
+        if (workers.length > 0) {
+            log("info", `Starting ${workers.length} worker(s)...`);
+            for (const { name, worker } of workers) {
+                // Use export name if worker name is anonymous
+                if (worker.name === "anonymous") {
+                    worker.name = name;
+                    worker.__id = name;
+                    worker.options.name = name;
+                }
+                if (worker.options.autoStart) {
+                    const createContext = (): HeliumContext => ({
+                        req: {
+                            ip: "127.0.0.1",
+                            headers: {},
+                            url: undefined,
+                            method: undefined,
+                            raw: {} as http.IncomingMessage,
+                        },
+                    });
+                    startWorker(worker, createContext).catch((err) => {
+                        log("error", `Failed to start worker '${worker.name}':`, err);
+                    });
+                }
+            }
+        }
     });
+
+    // Handle graceful shutdown
+    const shutdown = async () => {
+        log("info", "Shutting down...");
+        await stopAllWorkers();
+        server.close(() => {
+            log("info", "Server closed");
+            process.exit(0);
+        });
+    };
+
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
 
     return server;
 }

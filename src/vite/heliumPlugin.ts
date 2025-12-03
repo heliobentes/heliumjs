@@ -127,8 +127,8 @@ export default function helium(): Plugin {
                 return generateClientModule(methods);
             }
             if (id === RESOLVED_VIRTUAL_SERVER_MANIFEST_ID) {
-                const { methods, httpHandlers, middleware } = scanServerExports(root);
-                return generateServerManifest(methods, httpHandlers, middleware);
+                const { methods, httpHandlers, middleware, workers } = scanServerExports(root);
+                return generateServerManifest(methods, httpHandlers, middleware, workers);
             }
             if (id === RESOLVED_VIRTUAL_ENTRY_MODULE_ID + ".tsx") {
                 return generateEntryModule();
@@ -214,6 +214,7 @@ export default function helium(): Plugin {
                     const registerAll = mod.registerAll;
                     const httpHandlers = mod.httpHandlers || [];
                     const middlewareHandler = mod.middlewareHandler || null;
+                    const workers = mod.workers || [];
 
                     // Update the dev server registry with new methods and HTTP handlers
                     if (server.httpServer) {
@@ -227,7 +228,8 @@ export default function helium(): Plugin {
                                     httpRouter.setMiddleware(middlewareHandler);
                                 }
                             },
-                            config
+                            config,
+                            workers
                         );
                     }
                 } catch (e) {
@@ -302,6 +304,7 @@ export default function helium(): Plugin {
                     const registerAll = mod.registerAll;
                     const httpHandlers = mod.httpHandlers || [];
                     const middlewareHandler = mod.middlewareHandler || null;
+                    const workers = mod.workers || [];
 
                     if (server.httpServer) {
                         attachToDevServer(
@@ -314,7 +317,8 @@ export default function helium(): Plugin {
                                     httpRouter.setMiddleware(middlewareHandler);
                                 }
                             },
-                            config
+                            config,
+                            workers
                         );
                     }
                 } catch (e) {

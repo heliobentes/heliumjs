@@ -12,6 +12,9 @@ import { extractClientIP } from "../utils/ipExtractor.js";
 import { log } from "../utils/logger.js";
 import type { HeliumConfig } from "./config.js";
 import { getRpcConfig, getRpcSecurityConfig, getTrustProxyDepth } from "./config.js";
+import type { HeliumContext } from "./context.js";
+import type { HeliumWorkerDef } from "./defineWorker.js";
+import { startWorker, stopAllWorkers } from "./defineWorker.js";
 import { HTTPRouter } from "./httpRouter.js";
 import { RateLimiter } from "./rateLimiter.js";
 import { RpcRegistry } from "./rpcRegistry.js";
@@ -25,16 +28,22 @@ const brotliCompressAsync = promisify(brotliCompress);
 type LoadHandlersFn = (registry: RpcRegistry, httpRouter: HTTPRouter) => void;
 type HttpServer = http.Server | https.Server | http2.Http2Server | http2.Http2SecureServer;
 
+interface WorkerEntry {
+    name: string;
+    worker: HeliumWorkerDef;
+}
+
 let currentRegistry: RpcRegistry | null = null;
 let currentHttpRouter: HTTPRouter | null = null;
 let wss: WebSocketServer | null = null;
 let rateLimiter: RateLimiter | null = null;
+let currentWorkers: WorkerEntry[] = [];
 
 /**
  * Attaches HeliumTS HTTP handlers and WebSocket RPC server to an existing HTTP server.
  * This is used in dev mode to attach to Vite's dev server.
  */
-export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHandlersFn, config: HeliumConfig = {}) {
+export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHandlersFn, config: HeliumConfig = {}, workers: WorkerEntry[] = []) {
     // Load environment variables for server-side access
     const envVars = loadEnvFiles();
     injectEnvToProcess(envVars);
@@ -56,6 +65,64 @@ export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHand
     registry.setRateLimiter(rateLimiter);
     currentRegistry = registry;
     currentHttpRouter = httpRouter;
+
+    // Start workers if they changed
+    const workersChanged = workers.length !== currentWorkers.length || workers.some((w, i) => w.name !== currentWorkers[i]?.name || w.worker !== currentWorkers[i]?.worker);
+
+    if (workersChanged && workers.length > 0) {
+        // Stop all existing workers before starting new ones
+        stopAllWorkers().then(() => {
+            // Start new workers
+            for (const { name, worker } of workers) {
+                // Use export name if worker name is anonymous
+                if (worker.name === "anonymous") {
+                    worker.name = name;
+                    worker.__id = name;
+                    worker.options.name = name;
+                }
+                if (worker.options.autoStart) {
+                    const createContext = (): HeliumContext => ({
+                        req: {
+                            ip: "127.0.0.1",
+                            headers: {},
+                            url: undefined,
+                            method: undefined,
+                            raw: {} as http.IncomingMessage,
+                        },
+                    });
+                    startWorker(worker, createContext).catch((err) => {
+                        log("error", `Failed to start worker '${worker.name}':`, err);
+                    });
+                }
+            }
+            currentWorkers = workers;
+        });
+    } else if (currentWorkers.length === 0 && workers.length > 0) {
+        // First time starting workers
+        for (const { name, worker } of workers) {
+            // Use export name if worker name is anonymous
+            if (worker.name === "anonymous") {
+                worker.name = name;
+                worker.__id = name;
+                worker.options.name = name;
+            }
+            if (worker.options.autoStart) {
+                const createContext = (): HeliumContext => ({
+                    req: {
+                        ip: "127.0.0.1",
+                        headers: {},
+                        url: undefined,
+                        method: undefined,
+                        raw: {} as http.IncomingMessage,
+                    },
+                });
+                startWorker(worker, createContext).catch((err) => {
+                    log("error", `Failed to start worker '${worker.name}':`, err);
+                });
+            }
+        }
+        currentWorkers = workers;
+    }
 
     // Attach WebSocket server if not already attached
     if (!wss) {
@@ -91,7 +158,7 @@ export function attachToDevServer(httpServer: HttpServer, loadHandlers: LoadHand
                 return;
             }
 
-            socket.on("message", (msg: WebSocket.RawData, isBinary: boolean) => {
+            socket.on("message", (msg: WebSocket.RawData, _isBinary: boolean) => {
                 // Check rate limit
                 if (rateLimiter && !rateLimiter.checkRateLimit(socket)) {
                     // Parse request to get the ID for proper error response

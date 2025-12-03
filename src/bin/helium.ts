@@ -151,7 +151,7 @@ if (Object.keys(envVars).length > 0) {
 
     // Bundle with esbuild
     try {
-        const serverBuild = await esbuild({
+        await esbuild({
             entryPoints: [entryPath],
             outfile: path.join(root, "dist", "server.js"),
             bundle: true,

@@ -19,9 +19,10 @@ HeliumTS is a blazing fast 🚀 and opinionated full-stack React + Vite framewor
    - [RPC (Remote Procedure Calls)](#31-rpc-remote-procedure-calls)
    - [Routing](#32-routing)
    - [Custom HTTP Handlers](#33-custom-http-handlers)
-   - [Middleware](#34-middleware)
-   - [Configuration](#35-heliumconfigts)
-   - [Static Site Generation (SSG)](#36-static-site-generation-ssg)
+   - [Background Workers](#34-background-workers)
+   - [Middleware](#35-middleware)
+   - [Configuration](#36-heliumconfigts)
+   - [Static Site Generation (SSG)](#37-static-site-generation-ssg)
 4. [CLI Reference](#4-cli-reference)
 5. [More Documentation](#5-more-documentation)
 6. [Contributing](#6-contributing)
@@ -82,6 +83,8 @@ src/
     tasks.ts         # RPC methods for tasks
     auth.ts          # Auth-related methods
     webhooks.ts      # Webhook HTTP handlers
+    workers/         # Background workers
+      queueConsumer.ts
     _middleware.ts   # Server middleware
   components/        # React components
   types/             # Shared types
@@ -228,7 +231,36 @@ export const authHandler = defineHTTPRequest("ALL", "/auth/:provider", async (re
 ``` 
 ***`toWebRequest()`** converts Helium's `Request` to a standard web `Request` object.
 
-### 3.4. Middleware
+### 3.4. Background Workers
+
+Create long-running background processes using `defineWorker`. Perfect for queue consumers, scheduled jobs, and background tasks.
+
+**Server (`src/server/workers/queueConsumer.ts`):**
+
+```typescript
+import { defineWorker } from "heliumts/server";
+
+export const queueConsumer = defineWorker(async (ctx) => {
+    console.log("Queue consumer started");
+    
+    while (true) {
+        const job = await queue.pop();
+        if (job) {
+            await processJob(job);
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+}, { name: 'queueConsumer' });
+```
+
+When the server starts:
+```
+Starting worker 'queueConsumer'
+```
+
+Workers support auto-restart, configurable restart delays, and max restart attempts. See [Workers Documentation](./docs/workers.md) for queue consumers, scheduled tasks, and more.
+
+### 3.5. Middleware
 
 You can define a middleware to intercept requests to the server.
 
@@ -244,7 +276,7 @@ export default middleware(async (ctx, next) => {
 });
 ```
 
-### 3.5. helium.config.ts
+### 3.6. helium.config.ts
 Helium's configuration file allows you to customize server settings including RPC encoding, compression, security, and proxy configuration.
 
 ```typescript
@@ -271,7 +303,7 @@ export default config;
 ``` 
 See [Configuration Documentation](./docs/helium-config.md) for detailed options.
 
-### 3.6 Static Site Generation (SSG)
+### 3.7. Static Site Generation (SSG)
 HeliumTS supports Static Site Generation (SSG) through pre-rendering pages at build time.
 
 Add a `"use ssg";` directive at the top of your page component to enable SSG:
@@ -317,6 +349,7 @@ See [SSG Documentation](./docs/ssg.md) for detailed information including limita
 -   [Configuration](./docs/helium-config.md) - Configure RPC encoding, compression, security, and proxy settings
 -   [Static Site Generation](./docs/ssg.md) - Pre-render pages at build time for better performance
 -   [Route Groups](./docs/route-groups.md) - Organize routes with shared layouts without affecting URLs
+-   [Background Workers](./docs/workers.md) - Long-running background processes for queues, scheduled tasks, and more
 
 ### Deployment & Advanced
 -   [Context API](./docs/context-api.md) - Access request metadata including client IPs and headers

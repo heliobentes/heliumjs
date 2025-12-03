@@ -1,3 +1,3 @@
-import helium from './heliumPlugin.js';
+import helium from "./heliumPlugin.js";
 
 export default helium;

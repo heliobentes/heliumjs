@@ -19,10 +19,16 @@ export interface MiddlewareExport {
     filePath: string;
 }
 
+export interface WorkerExport {
+    name: string;
+    filePath: string;
+}
+
 export interface ServerExports {
     methods: MethodExport[];
     httpHandlers: HTTPHandlerExport[];
     middleware?: MiddlewareExport;
+    workers: WorkerExport[];
 }
 
 export function scanServerMethods(root: string): MethodExport[] {
@@ -33,11 +39,12 @@ export function scanServerMethods(root: string): MethodExport[] {
 export function scanServerExports(root: string): ServerExports {
     const serverDir = path.resolve(root, SERVER_DIR);
     if (!fs.existsSync(serverDir)) {
-        return { methods: [], httpHandlers: [] };
+        return { methods: [], httpHandlers: [], workers: [] };
     }
 
     const methods: MethodExport[] = [];
     const httpHandlers: HTTPHandlerExport[] = [];
+    const workers: WorkerExport[] = [];
     let middleware: MiddlewareExport | undefined;
 
     function walk(dir: string) {
@@ -90,12 +97,21 @@ export function scanServerExports(root: string): ServerExports {
                         filePath: fullPath,
                     });
                 }
+
+                // Find: export const workerName = defineWorker(...)
+                const workerRegex = /export\s+const\s+(\w+)\s*=\s*defineWorker/g;
+                while ((match = workerRegex.exec(content)) !== null) {
+                    workers.push({
+                        name: match[1],
+                        filePath: fullPath,
+                    });
+                }
             }
         }
     }
 
     walk(serverDir);
-    return { methods, httpHandlers, middleware };
+    return { methods, httpHandlers, middleware, workers };
 }
 
 /**

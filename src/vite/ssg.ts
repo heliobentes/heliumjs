@@ -354,21 +354,6 @@ export async function generateStaticPages(context: any, root: string, htmlTempla
     // Filter out dynamic routes
     const staticPages = ssgPages.filter((p) => !p.relativePath.includes("["));
 
-    // Display warnings for pages that may not be truly static
-    const pagesWithWarnings = staticPages.filter((p) => p.warnings.length > 0);
-    if (pagesWithWarnings.length > 0) {
-        log("warn", "");
-        log("warn", "⚠️  SSG Warning: The following pages may not be fully static:");
-        for (const page of pagesWithWarnings) {
-            log("warn", `  ${page.relativePath}:`);
-            for (const warning of page.warnings) {
-                log("warn", `    - ${warning}`);
-            }
-        }
-        log("warn", "  These pages will be pre-rendered but may require client-side hydration.");
-        log("warn", "");
-    }
-
     // Precompute RPC client stubs for SSG (mirrors helium Vite plugin)
     const { methods } = scanServerExports(root);
     const serverStubCode = `// Auto-generated SSG RPC stub\n${generateClientModule(methods)}\n`;
